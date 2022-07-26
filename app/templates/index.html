@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block content %}
+  <!-- <h3> This is the start of my child template</h3> -->
+
+<p><table>
+    <tr>
+		<th> Название</th>
+		<th> Фото</th>
+		<th> Наличие</th>
+		<th> Цена</th>
+		<th> Загрузить фото</th>
+		</tr>
+    {% for modelgood in modelgoods %}
+   {% include 'modelgood.html' %}
+
+    {% endfor %}
+ </table>
+
+{% if modelgoods.has_prev %}<a href="{{ url_for('index', page = modelgoods.prev_num) }}"><< Newer modelgoods</a>{% else %}<< Newer modelgoods{% endif %} |
+{% if modelgoods.has_next %}<a href="{{ url_for('index', page = modelgoods.next_num) }}">Older modelgoods >></a>{% else %}Older modelgoods >>{% endif %}
+<!--    <form action="/" method="POST" enctype="multipart/form-data">-->
+<!--        {{ form.csrf_token }}-->
+<!--        {{ form.docFileField }}-->
+<!--        <button type="submit">upload</button>-->
+<!--    </form>-->
+  </body>
+</html>
+
+<!-- <h3> This is the end of my child template</h3> -->
+
+{% endblock %}

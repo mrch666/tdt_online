@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block content %}
+  <!-- <h3> This is the start of my child template</h3> -->
+    <form action="" method="post">
+	{{ form.csrf_token }}
+	<p>
+	    {{ form.username.label() }}
+	    {{ form.username() }}
+	    {% if form.username.errors %}
+		{% for error in form.username.errors %}
+		    {{ error }}
+		{% endfor %}
+	    {% endif %}
+	</p>
+	<p>
+	    {{ form.password.label() }}
+	    {{ form.password() }}
+	    {% if form.password.errors %}
+		{% for error in form.password.errors %}
+		    {{ error }}
+		{% endfor %}
+	    {% endif %}
+	</p>
+	<p>
+	    {{ form.remember.label() }}
+	    {{ form.remember() }}
+	</p>
+	<p>
+	    {{ form.submit() }}
+	</p>
+    </form>
+  </body>
+</html>
+
+<!-- <h3> This is the end of my child template</h3> -->
+
+{% endblock %}

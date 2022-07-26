@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+  <!-- <h3> This is the start of my child template</h3> -->
+   <h2>Logged in User details</h2>
+
+<ul>
+    <li>Username: {{ current_user.username }}</li>
+    <li>Email: {{ current_user.email }}</li>
+    <li>Created on: {{ current_user.created_on }}</li>
+    <li>Updated on: {{ current_user.updated_on }}</li>
+</ul>
+
+  </body>
+</html>
+
+<!-- <h3> This is the end of my child template</h3> -->
+
+{% endblock %}

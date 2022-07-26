@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block content %}
+  <!-- <h3> This is the start of my child template</h3> -->
+
+<p><table>
+    <tr>
+		<th> Группа услуг</th>
+		<th> Тип Услуг</th>
+		<th> Наименование</th>
+		<th> Цена</th>
+    </tr>
+    {% for servise in servises %}
+   {% include 'servise.html' %}
+
+    {% endfor %}
+ </table>
+
+
+  </body>
+</html>
+
+<!-- <h3> This is the end of my child template</h3> -->
+
+{% endblock %}
