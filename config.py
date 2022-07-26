@@ -13,6 +13,9 @@ class Config(object):
     DEBUG=True
     CACHE_TYPE="SimpleCache"
     CACHE_DEFAULT_TIMEOUT=300
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        'DATABASE_URL') or f'''firebird://SYSDBA:masterkey@{serverdb}:3055/C:\\Program Files (x86)\\tdt3\\bases\\TDTBASE.FDB?charset
+        =win1251'''
     # SQLALCHEMY_DATABASE_URI = os.environ.get(
     #     'DATABASE_URL') or f'''firebird://SYSDBA:masterkey@{serverdb}:3055/C:\\Program Files (x86)\\tdt3\\bases\\TDTBASE.FDB?charset
     #     =win1251&fb_library_name={os.path.join(basedir, 'libudfdll.so')}'''
