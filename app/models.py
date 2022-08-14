@@ -4,6 +4,7 @@ from sqlalchemy import BigInteger, Column, Computed, Date, DateTime, Float, Inde
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import quoted_name
 from app import login
+from flask_login import UserMixin
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -12,6 +13,7 @@ metadata = Base.metadata
 @login.user_loader
 def load_user(id):
     return User.query.get(id)
+
 
 class DImport(Base):
     __tablename__ = quoted_name('_d_import', True)
@@ -1386,7 +1388,7 @@ class Uncompllink(Base):
     price = Column(quoted_name('price', True), Float, server_default=text("0"))
 
 
-class User(Base):
+class User(UserMixin, Base):
     __tablename__ = quoted_name('users', True)
 
     id = Column(quoted_name('id', True), Text(12), primary_key=True, server_default=text("'0'"))

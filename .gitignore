@@ -1,1 +1,4 @@
 /venv/
+.dotenv
+SERVER_TDT='176.99.3.183'
+/.env
