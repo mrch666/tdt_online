@@ -10,7 +10,7 @@
 		<th> Цена</th>
 		<th> Загрузить фото</th>
 		</tr>
-    {% for modelgood in modelgoods %}
+    {% for storage,modelgood,vollink,voll in modelgoods %}
    {% include 'modelgood.html' %}
 
     {% endfor %}
