@@ -72,7 +72,6 @@ def index(page=1):
         join(Vollink,Modelgood.id==Vollink.modelid).\
         join(Vol, Vollink.vol1id==Vol.id).\
         filter(Vollink.level=='1').\
-        filter((Storage.id=='0000010004cx' or Storage.id== '0000010004Xu') or Storage.id== '0rfarg00002C').\
         paginate(page,
                                                     Config.MODELGOODS_PER_PAGE,
                                                     False).items
