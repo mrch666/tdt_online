@@ -75,7 +75,8 @@ def index(page=1):
         filter((Storage.id=='0000010004cx' or Storage.id== '0000010004Xu') or Storage.id== '0rfarg000b52').\
         paginate(page,
                                                     Config.MODELGOODS_PER_PAGE,
-                                                    False).items
+                                                    False)
+    print(modelgoods)
     if form.validate_on_submit():
         return "Filename"
         # filename = images.save(form.docFileField.data)
