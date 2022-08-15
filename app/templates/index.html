@@ -10,7 +10,7 @@
 		<th> наличие</th>
 		<th> цена</th>
 		</tr>
-    {% for storage,modelgood,vollink,vol in modelgoods %}
+    {% for storage,modelgood,vollink,vol, folder in modelgoods %}
    {% include 'modelgood.html' %}
 
     {% endfor %}
