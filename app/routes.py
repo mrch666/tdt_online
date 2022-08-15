@@ -66,7 +66,7 @@ def index(page=1):
                 Bundle('vols',Vol.name),
                 Bundle('vollink',Vollink.codemodel,Vollink.kmin,Vollink.barcode)
                 )
-    modelgoods = not db.session.query(Storage).\
+    modelgoods = db.session.query(Storage).\
         join(Modelgood,Storage.modelid == Modelgood.id).\
         join(Folder, Storage.folderid == Folder.id).\
         join(Vollink,Modelgood.id==Vollink.modelid).\
