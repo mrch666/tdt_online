@@ -4,5 +4,5 @@
         <td><img src="{{modelgood.imgext}}">{{modelgood.imgext}}</td>
         <td><i>{{vollink.codemodel}}</i><br></td>
         <td><i>{{storage.count/vollink.kmin}}{{vol.name}} на {{folder.name}}</i><br></td>
-        <td><i>{{storage.p2value*vollink.kmin}} руб</i><br></td>
+        <td><i>{{storage.p2value*vollink.kmin |round|int}} руб</i><br></td>
     </tr>
