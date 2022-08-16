@@ -60,12 +60,7 @@ def FindModel(searchtext=""):
 @app.route('/index/<int:page>', methods=['GET', 'POST'])
 def index(page=1):
     form = DocFileForm()
-    modelgoodinstorage = Bundle("instorage",
-                Bundle('modelgoods', Modelgood.name, Modelgood.id,Modelgood.changedate, Modelgood.imgext),
-                Bundle('storage', Storage.count, Storage.p2value),
-                Bundle('vols',Vol.name),
-                Bundle('vollink',Vollink.codemodel,Vollink.kmin,Vollink.barcode)
-                )
+
     modelgoods = db.session.query(Storage,Modelgood, Vollink,Vol,Folder).\
         join(Modelgood,Storage.modelid == Modelgood.id).\
         join(Folder, Storage.folderid == Folder.id).\
@@ -124,3 +119,16 @@ def logout():
     flash("You have been logged out.")
     return redirect(url_for('login'))
 
+
+@app.route('/modelgoods/search/<searchtext>')
+def get(searchtext):
+        #print("ищем товар на складе %s"%searchtext)
+        modelgoods = db.session.query(Storage, Modelgood, Vollink, Vol, Folder). \
+            join(Modelgood, Storage.modelid == Modelgood.id). \
+            join(Folder, Storage.folderid == Folder.id). \
+            join(Vollink, Modelgood.id == Vollink.modelid). \
+            join(Vol, Vollink.vol1id == Vol.id). \
+            filter(Vollink.level == '1'). \
+            filter(Modelgood.name.like(f'%{searchtext}%')). \
+            items
+        return Response(json.dumps(FindModel(searchtext=searchtext), ensure_ascii=False).encode('utf-8'),  mimetype='application/json')
