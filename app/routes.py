@@ -120,15 +120,15 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/modelgoods/search/<searchtext>')
-def get(searchtext):
-        #print("ищем товар на складе %s"%searchtext)
-        modelgoods = db.session.query(Storage, Modelgood, Vollink, Vol, Folder). \
-            join(Modelgood, Storage.modelid == Modelgood.id). \
-            join(Folder, Storage.folderid == Folder.id). \
-            join(Vollink, Modelgood.id == Vollink.modelid). \
-            join(Vol, Vollink.vol1id == Vol.id). \
-            filter(Vollink.level == '1'). \
-            filter(Modelgood.name.like(f'%{searchtext}%')). \
-            items
-        return Response(json.dumps(FindModel(searchtext=searchtext), ensure_ascii=False).encode('utf-8'),  mimetype='application/json')
+# @app.route('/modelgoods/search/<searchtext>')
+# def get(searchtext):
+#         #print("ищем товар на складе %s"%searchtext)
+#         modelgoods = db.session.query(Storage, Modelgood, Vollink, Vol, Folder). \
+#             join(Modelgood, Storage.modelid == Modelgood.id). \
+#             join(Folder, Storage.folderid == Folder.id). \
+#             join(Vollink, Modelgood.id == Vollink.modelid). \
+#             join(Vol, Vollink.vol1id == Vol.id). \
+#             filter(Vollink.level == '1'). \
+#             filter(Modelgood.name.like(f'%{searchtext}%')). \
+#             items
+#         return Response(json.dumps(FindModel(searchtext=searchtext), ensure_ascii=False).encode('utf-8'),  mimetype='application/json')
