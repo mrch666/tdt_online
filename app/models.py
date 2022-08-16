@@ -735,6 +735,18 @@ class Modelgood(Base):
     wlink = Column(quoted_name('wlink', True), String(200))
     labeled = Column(quoted_name('labeled', True), Integer)
 
+    def to_dict(self, ):
+        data = {
+            'id': self.id,
+            'name': self.name,
+            'changedate': self.changedate.isoformat() + 'Z',
+            'imgext': self.imgext2,
+
+
+        }
+
+        return data
+
 
 t_movings = Table(
     'movings', metadata,
