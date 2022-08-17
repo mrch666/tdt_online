@@ -37,5 +37,5 @@ def get_models_by_id(searchtext):
            {"imageurl":"http://"+config.Config.serverdb+'''/img/'''+m.imagename() if m.imagename() else None}) for s,m,v,vl,fl in
         basequery.\
         # filter(Modelgood.name.ilike(f'%{searchtext}%')).\
-                   first(15)]
+                   first(0,15)]
     return jsonify(list)
