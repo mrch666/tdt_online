@@ -14,6 +14,11 @@ libc = cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),
 db = SQLAlchemy()
 bootstrap = Bootstrap()
 
+
+def dec64(modelid):
+    return str(libc.dec64i0(modelid.encode())) + '_' + str(libc.dec64i1(modelid.encode()))
+
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)

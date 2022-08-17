@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import quoted_name
 from sqlalchemy_serializer import SerializerMixin
 
-from app import login
+from app import login, dec64
 from flask_login import UserMixin
 
 Base = declarative_base()
@@ -737,6 +737,8 @@ class Modelgood(Base,SerializerMixin):
     wlink = Column(quoted_name('wlink', True), String(200))
     labeled = Column(quoted_name('labeled', True), Integer)
 
+    def imagename(self):
+        return dec64(self.id)
     # def to_dict(self, ):
     #     data = {
     #         'id': self.id,
