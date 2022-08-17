@@ -31,7 +31,7 @@ def get_models_by_id(searchtext):
 
 @bp.route('/modelgoods/imagebyid/<string:modelid>', methods=['GET'])
 def get_image_by_id(modelid):
-    res=db.session.execute('dec64i0(?)', (modelid,)).one()
+    res=db.session.execute('''select dec64i0(mg."id") || '_' || dec64i1(mg."modelid") "decmid" from "modelgoods" as "mg" where mg."id"=? ''', (modelid,)).one()
     print(res)
     for r in res:
         print(r)
