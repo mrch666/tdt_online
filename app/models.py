@@ -1455,7 +1455,7 @@ class Vol(Base, SerializerMixin):
     okei = Column(quoted_name('okei', True), Text(10))
 
 
-class Vollink(Base,Storage):
+class Vollink(Base,SerializerMixin):
     __tablename__ = quoted_name('vollink', True)
     __table_args__ = (
         Index('IAlpha_vollink', 'modelid', 'kmin'),
