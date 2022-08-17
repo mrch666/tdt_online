@@ -2,8 +2,9 @@ from flask import jsonify
 from sqlalchemy import or_
 from sqlalchemy.orm import Bundle
 
+
 from app.api import bp
-from app import db
+from app import db, libc
 from app.models import Modelgood, Storage, Vollink, Vol, Folder
 from config import Config
 
@@ -31,8 +32,5 @@ def get_models_by_id(searchtext):
 
 @bp.route('/modelgoods/imagebyid/<string:modelid>', methods=['GET'])
 def get_image_by_id(modelid):
-    res=db.session.execute('''select dec64i0("modelgoods"."id") || '_' || dec64i1("modelgoods"."id") "decmid" from "modelgoods" where "modelgoods"."id"=? ''', (modelid,)).all()
-    print(res)
-    for r in res:
-        print(r)
+    res=libc.dec64i0(modelid)+'_'+libc.dec64i1(modelid)
     return jsonify(res)

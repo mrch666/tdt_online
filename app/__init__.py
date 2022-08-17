@@ -2,13 +2,13 @@
 from flask import Flask
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager
-
+from ctypes import *
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
 
 login = LoginManager()
 login.login_view = 'auth.login'
-
+libc = cdll.LoadLibrary("..libudfdll.so")
 db = SQLAlchemy()
 bootstrap = Bootstrap()
 
