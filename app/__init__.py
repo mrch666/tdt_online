@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+
 from flask import Flask
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager
@@ -8,7 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 login = LoginManager()
 login.login_view = 'auth.login'
-libc = cdll.LoadLibrary("libudfdll.so")
+libc = cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'libudfdll.so'))
 db = SQLAlchemy()
 bootstrap = Bootstrap()
 
