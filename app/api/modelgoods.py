@@ -32,5 +32,5 @@ def get_models_by_id(searchtext):
 
 @bp.route('/modelgoods/imagebyid/<string:modelid>', methods=['GET'])
 def get_image_by_id(modelid):
-    res=str(libc.dec64i0(modelid))+'_'+str(libc.dec64i1(modelid))
+    res=str(libc.dec64i0(modelid.encode()))+'_'+str(libc.dec64i1(modelid.encode()))
     return jsonify(res)
