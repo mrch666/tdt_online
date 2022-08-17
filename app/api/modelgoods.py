@@ -26,7 +26,7 @@ def get_models_by_id(searchtext):
             filter(Storage.folderid != '0rfarg000FZh')
     if " " in searchtext:
      for search in searchtext.split(' '):
-         if len(search)>2:
+         if len(search)>1:
              search_args = [col.ilike('%%%s%%' % search) for col in [Modelgood.name, Vollink.barcode]]
              basequery=basequery.filter(or_(*search_args))
     else:
