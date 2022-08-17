@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-from flask import render_template, flash, redirect, url_for, request
-from sqlalchemy.orm import Bundle
-from werkzeug.urls import url_parse
+from flask import render_template, flash, redirect, url_for
 
 from  config import Config
-from app import app , db
-from app.form import LoginForm, DocFileForm
-from flask_login import current_user, login_user, logout_user, login_required
+from app import db
+from app.main.form import LoginForm, DocFileForm
+from flask_login import current_user, login_user, login_required
 from app.models import User, Modelgood, Pricelink, Servicedict, Typeservice, Storage, Folder, Vollink, Vol
 
 
