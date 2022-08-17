@@ -3,6 +3,7 @@ from flask import jsonify
 from app.api import bp
 from app import db
 from app.models import Modelgood, Storage, Vollink, Vol, Folder
+from config import Config
 
 
 @bp.route('/modelgoods/<string:id>', methods=['GET'])
@@ -17,5 +18,7 @@ def get_models_by_id(searchtext):
         join(Vollink,Modelgood.id==Vollink.modelid).\
         join(Vol, Vollink.vol1id==Vol.id).\
         filter(Vollink.level=='1'). \
-                   filter(Modelgood.name.like(f'%{searchtext}%')). \
+                   filter(Modelgood.name.like(f'%{searchtext}%')).\
+                   paginate(1,Config.MODELGOODS_PER_PAGE,
+                            False).\
                    items)
