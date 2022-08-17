@@ -18,5 +18,7 @@ def get_models_by_id(searchtext):
         join(Vollink,Modelgood.id==Vollink.modelid).\
         join(Vol, Vollink.vol1id==Vol.id).\
         filter(Vollink.level=='1'). \
-                   filter(Modelgood.name.ilike(f'%{searchtext}%')).\
+        filter(Storage.id != '0rfarg000os1'). \
+        filter(Storage.id != '0rfarg000FZh'). \
+        filter(Modelgood.name.ilike(f'%{searchtext}%')).\
                    all()])
