@@ -6,7 +6,7 @@ from app import db
 from app.main.form import LoginForm, DocFileForm
 from flask_login import current_user, login_user, login_required
 from app.models import User, Modelgood, Pricelink, Servicedict, Typeservice, Storage, Folder, Vollink, Vol
-
+from app.main import bp
 
 def FindModel(searchtext=""):
 
@@ -53,9 +53,9 @@ def FindModel(searchtext=""):
 
 
 
-@app.route('/', methods=['GET', 'POST'])
-@app.route('/index', methods=['GET', 'POST'])
-@app.route('/index/<int:page>', methods=['GET', 'POST'])
+@bp.route('/', methods=['GET', 'POST'])
+@bp.route('/index', methods=['GET', 'POST'])
+@bp.route('/index/<int:page>', methods=['GET', 'POST'])
 def index(page=1):
     form = DocFileForm()
 
@@ -78,7 +78,7 @@ def index(page=1):
 
 
 
-@app.route('/services/')
+@bp.route('/services/')
 def servises():
         iservises = db.session.query(Pricelink).join(Servicedict, Servicedict.id==Pricelink.modelid).join(Typeservice,
                                                                                                           Servicedict.typeid==Typeservice.id).add_columns(Pricelink.p2value, Servicedict.name)
@@ -86,13 +86,13 @@ def servises():
         return render_template('servises.html',servises=iservises)
 
 
-@app.route('/admin/')
+@bp.route('/admin/')
 @login_required
 def admin():
     return render_template('admin.html')
 
 
-@app.route('/login/', methods=['post', 'get'])
+@bp.route('/login/', methods=['post', 'get'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('admin'))
@@ -111,7 +111,7 @@ def login():
         return render_template('login.html', form=form)
 
 
-@app.route('/logout/')
+@bp.route('/logout/')
 @login_required
 def logout():
     flash("You have been logged out.")
