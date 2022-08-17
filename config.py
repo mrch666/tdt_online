@@ -12,6 +12,7 @@ class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
     SQLALCHEMY_ECHO = True
     DEBUG = True
+    JSON_AS_ASCII = False
     CACHE_TYPE = "SimpleCache"
     CACHE_DEFAULT_TIMEOUT = 300
     SQLALCHEMY_TRACK_MODIFICATIONS = False
