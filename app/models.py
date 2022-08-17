@@ -3,6 +3,8 @@ from sqlalchemy import BigInteger, Column, Computed, Date, DateTime, Float, Inde
     String, Table, Text, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import quoted_name
+from sqlalchemy_serializer import SerializerMixin
+
 from app import login
 from flask_login import UserMixin
 
@@ -703,7 +705,7 @@ class Linkedid(Base):
     strid = Column(quoted_name('strid', True), String(100), nullable=False, unique=True)
 
 
-class Modelgood(Base):
+class Modelgood(Base,SerializerMixin):
     __tablename__ = quoted_name('modelgoods', True)
     __table_args__ = (
         Index('IAlpha2_modelgoods', 'typeid', 'firmaid', 'cognate', 'name'),
@@ -735,17 +737,17 @@ class Modelgood(Base):
     wlink = Column(quoted_name('wlink', True), String(200))
     labeled = Column(quoted_name('labeled', True), Integer)
 
-    def to_dict(self, ):
-        data = {
-            'id': self.id,
-            'name': self.name,
-            'changedate': self.changedate.isoformat() + 'Z',
-            'imgext': self.imgext2,
-
-
-        }
-
-        return data
+    # def to_dict(self, ):
+    #     data = {
+    #         'id': self.id,
+    #         'name': self.name,
+    #         'changedate': self.changedate.isoformat() + 'Z',
+    #         'imgext': self.imgext2,
+    #
+    #
+    #     }
+    #
+    #     return data
 
 
 t_movings = Table(
@@ -1188,7 +1190,7 @@ t_setupc = Table(
 )
 
 
-class Storage(Base):
+class Storage(Base,SerializerMixin):
     __tablename__ = quoted_name('storage', True)
     __table_args__ = (
         Index('storage_IDX3', 'folderid', 'cognate'),
@@ -1443,7 +1445,7 @@ class Vidpldict(Base):
     changedate = Column(quoted_name('changedate', True), DateTime)
 
 
-class Vol(Base):
+class Vol(Base, SerializerMixin):
     __tablename__ = quoted_name('vol', True)
 
     id = Column(quoted_name('id', True), Text(12), primary_key=True, server_default=text("'0'"))
@@ -1453,7 +1455,7 @@ class Vol(Base):
     okei = Column(quoted_name('okei', True), Text(10))
 
 
-class Vollink(Base):
+class Vollink(Base,Storage):
     __tablename__ = quoted_name('vollink', True)
     __table_args__ = (
         Index('IAlpha_vollink', 'modelid', 'kmin'),

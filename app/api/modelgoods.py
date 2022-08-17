@@ -19,4 +19,4 @@ def get_models_by_id(searchtext):
         join(Vol, Vollink.vol1id==Vol.id).\
         filter(Vollink.level=='1'). \
                    filter(Modelgood.name.like(f'%{searchtext}%')).\
-                   all()])
+                   all().to_dict()])
