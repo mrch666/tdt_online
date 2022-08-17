@@ -738,7 +738,8 @@ class Modelgood(Base,SerializerMixin):
     labeled = Column(quoted_name('labeled', True), Integer)
 
     def imagename(self):
-        return dec64(self.id)
+        if self.imgext:
+            return dec64(self.id)+'.'+self.imgext
     # def to_dict(self, ):
     #     data = {
     #         'id': self.id,
