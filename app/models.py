@@ -524,7 +524,7 @@ class Flytable(Base):
     dtsave = Column(quoted_name('dtsave', True), DateTime)
 
 
-class Folder(Base):
+class Folder(Base, SerializerMixin):
     __tablename__ = quoted_name('folders', True)
     __table_args__ = (
         Index('ITrailer', 'folder_type', 'istrailer'),
