@@ -8,7 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 login = LoginManager()
 login.login_view = 'auth.login'
-libc = cdll.LoadLibrary("../libudfdll.so")
+libc = cdll.LoadLibrary("libudfdll.so")
 db = SQLAlchemy()
 bootstrap = Bootstrap()
 
