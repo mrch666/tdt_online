@@ -13,7 +13,7 @@ def get_model_by_id(id):
 
 @bp.route('/modelgoods/search/<string:searchtext>', methods=['GET'])
 def get_models_by_id(searchtext):
-    return jsonify((s.to_dict(),m.to_dict(),v.to_dict(),vl.to_dict(),fl.to_dict()) for s,m,v,vl,fl in db.session.query(Storage,Modelgood, Vollink,Vol,Folder).\
+    return jsonify([(s.to_dict(),m.to_dict(),v.to_dict(),vl.to_dict(),fl.to_dict()) for s,m,v,vl,fl in db.session.query(Storage,Modelgood, Vollink,Vol,Folder).\
         join(Modelgood,Storage.modelid == Modelgood.id).\
         join(Folder, Storage.folderid == Folder.id).\
         join(Vollink,Modelgood.id==Vollink.modelid).\
@@ -22,4 +22,4 @@ def get_models_by_id(searchtext):
         filter(Storage.folderid != '0rfarg000os1'). \
         filter(Storage.folderid != '0rfarg000FZh'). \
         filter(Modelgood.name.ilike(f'%{searchtext}%')).\
-                   all())
+                   all()])
