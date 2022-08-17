@@ -12,7 +12,7 @@ def get_model_by_id(id):
 
 @bp.route('/modelgoods/search/<string:searchtext>', methods=['GET'])
 def get_models_by_id(searchtext):
-    return jsonify(json_list=[d.to_dict() for d in db.session.query(Storage,Modelgood, Vollink,Vol,Folder).\
+    return jsonify(json_list=[ (s.to_dict(),m.to_dict(),v.to_dict(),vl.to_dict()) for s,m,v,vl in db.session.query(Storage,Modelgood, Vollink,Vol,Folder).\
         join(Modelgood,Storage.modelid == Modelgood.id).\
         join(Folder, Storage.folderid == Folder.id).\
         join(Vollink,Modelgood.id==Vollink.modelid).\
