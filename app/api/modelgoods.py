@@ -12,11 +12,11 @@ def get_model_by_id(id):
 
 @bp.route('/modelgoods/search/<string:searchtext>', methods=['GET'])
 def get_models_by_id(searchtext):
-    return jsonify(json_list=[db.session.query(Storage,Modelgood, Vollink,Vol,Folder).\
+    return jsonify(json_list=[d.to_dict() for d in db.session.query(Storage,Modelgood, Vollink,Vol,Folder).\
         join(Modelgood,Storage.modelid == Modelgood.id).\
         join(Folder, Storage.folderid == Folder.id).\
         join(Vollink,Modelgood.id==Vollink.modelid).\
         join(Vol, Vollink.vol1id==Vol.id).\
         filter(Vollink.level=='1'). \
                    filter(Modelgood.name.like(f'%{searchtext}%')).\
-                   all().to_dict()])
+                   all()])
