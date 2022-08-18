@@ -33,7 +33,7 @@ def get_models_by_id(search_text):
             if len(search_text) > 3:
                 search_args = [col.ilike('%%%s%%' % search_text) for col in [Modelgood.name, Vollink.barcode]]
                 base_query = base_query.filter(or_(*search_args))
-        list_to_json = {'list':[{"count":sc/vkmin,"price":sp*vkmin, 'name':mn, 'id':mi, 'barcde':vb,'code':vc.strip(),'volname':vn.strup(),"foldername":fn,
+        list_to_json = {'list':[{"count":sc/vkmin,"price":sp*vkmin, 'name':mn, 'id':mi, 'barcde':vb,'code':vc.strip(),'volname':vn.strip(),"foldername":fn,
                         "img_url": "http://" + config.Config.serverdb + '''/img/''' + (dec64(mi)+'.'+mimext) if
                         mimext else None}
                         for sc,sp, mn, mi,mimext, vb,vc,vkmin,vn,fn in
