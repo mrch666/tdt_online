@@ -18,12 +18,15 @@ def get_model_by_id(id):
 def get_models_by_id(search_text):
     if len(search_text) > 3:
         base_query = db.session.query(Storage, Modelgood, Vollink, Vol, Folder). \
+            options(load_only(Storage.count, Storage.p2value)). \
             join(Modelgood, Storage.modelid == Modelgood.id). \
+            options(load_only( Modelgood.name, Modelgood.imgext)). \
             join(Folder, Storage.folderid == Folder.id). \
+            options(load_only( Folder.name)). \
             join(Vollink, Modelgood.id == Vollink.modelid). \
+            options(load_only(Vollink.barcode, Vollink.kmin, Vollink.codemodel)). \
             join(Vol, Vollink.vol1id == Vol.id). \
-            options(load_only(Storage.count, Storage.p2value, Modelgood.name, Modelgood.imgext,
-                              Vollink.barcode, Vollink.kmin, Vollink.codemodel, Vol.name, Folder.name)). \
+            options(load_only( Vol.name)). \
             filter(Vollink.level == '1'). \
             filter(Storage.folderid != '0rfarg000os1'). \
             filter(Storage.folderid != '0rfarg000FZh')
