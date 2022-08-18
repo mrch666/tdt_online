@@ -1,4 +1,5 @@
 from flask import jsonify
+from flask_caching import Cache
 from sqlalchemy import or_, func
 
 import config
@@ -7,6 +8,7 @@ from app.api import bp
 from app.models import Modelgood, Storage, Vollink, Vol, Folder
 from config import Config
 
+cache = Cache()
 
 @bp.route('/modelgoods/<string:id>', methods=['GET'])
 def get_model_by_id(id):
@@ -14,6 +16,7 @@ def get_model_by_id(id):
 
 
 @bp.route('/modelgoods/search/<string:search_text>', methods=['GET'])
+@cache.cached(timeout=530)
 def get_models_by_id(search_text):
     if len(search_text) > 3:
         base_query = db.session.query(func.sum(Storage.count),func.max(Storage.p2value), func.max(Modelgood.name),func.max(Modelgood.id),func.max(Modelgood.imgext),
@@ -33,11 +36,15 @@ def get_models_by_id(search_text):
             if len(search_text) > 3:
                 search_args = [col.ilike('%%%s%%' % search_text) for col in [Modelgood.name, Vollink.barcode]]
                 base_query = base_query.filter(or_(*search_args))
+        foo=base_query.paginate(1,
+                                            Config.MODELGOODS_PER_PAGE,
+                                            False).items
+        if foo is not None:
+            cache.set("foo", foo)
+        bar = cache.get("foo")
         list_to_json = {'storage':[{"count":sc/vkmin,"price":int(sp*vkmin), 'name':mn, 'id':mi, 'barcde':vb,'code':vc.strip(),'volname':vn.strip(),"foldername":fn,
                         "img_url": "http://" + config.Config.serverdb + '''/img/''' + (dec64(mi)+'.'+mimext) if
                         mimext else None}
                         for sc,sp, mn, mi,mimext, vb,vc,vkmin,vn,fn in
-                        base_query.paginate(1,
-                                            Config.MODELGOODS_PER_PAGE,
-                                            False).items]}
+                        bar]}
         return jsonify(list_to_json)
