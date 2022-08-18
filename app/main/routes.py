@@ -64,7 +64,7 @@ def index(page=1):
         join(Folder, Storage.folderid == Folder.id).\
         join(Vollink,Modelgood.id==Vollink.modelid).\
         join(Vol, Vollink.vol1id==Vol.id). \
-        loadonly(Storage.count, Storage.p2value, Modelgood.name, Modelgood.imgext,
+        load_only(Storage.count, Storage.p2value, Modelgood.name, Modelgood.imgext,
                  Vollink.barcode, Vollink.kmin, Vollink.codemodel, Vol.name, Folder.name). \
         filter(Vollink.level=='1').\
         paginate(page,
