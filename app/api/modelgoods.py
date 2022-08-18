@@ -14,7 +14,7 @@ def get_model_by_id(id):
     return jsonify(db.session.query(Modelgood).get_or_404(id).to_dict())
 
 
-@bp.route('/modelgoods/search/<string:searched>', methods=['GET'])
+@bp.route('/modelgoods/search/<string:search_text>', methods=['GET'])
 def get_models_by_id(search_text):
     if len(search_text) > 3:
         base_query = db.session.query(Storage, Modelgood, Vollink, Vol, Folder). \
