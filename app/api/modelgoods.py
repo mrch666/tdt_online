@@ -33,12 +33,6 @@ def get_models_by_id(search_text):
             if len(search_text) > 3:
                 search_args = [col.ilike('%%%s%%' % search_text) for col in [Modelgood.name, Vollink.barcode]]
                 base_query = base_query.filter(or_(*search_args))
-        list_to_json = [(s.to_dict(), m.to_dict(), v.to_dict(), vl.to_dict(), fl.to_dict(),
-                         {
-                             "img_url": "http://" + config.Config.serverdb + '''/img/''' + m.imagename() if
-                             m.imagename() else None})
-                        for s, m, v, vl, fl in
-                        base_query.paginate(1,
-                                            Config.MODELGOODS_PER_PAGE,
-                                            False).items]
+        list_to_json = base_query.paginate(1,Config.MODELGOODS_PER_PAGE,
+                                            False).items
         return jsonify(list_to_json)
