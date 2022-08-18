@@ -8,7 +8,7 @@ from app.api import bp
 from app.models import Modelgood, Storage, Vollink, Vol, Folder
 from config import Config
 
-cache = Cache()
+cache = Cache(bp)
 
 @bp.route('/modelgoods/<string:id>', methods=['GET'])
 def get_model_by_id(id):
