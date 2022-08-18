@@ -3,6 +3,7 @@ import os
 
 from flask import Flask
 from flask_bootstrap import Bootstrap
+from flask_caching import Cache
 from flask_login import LoginManager
 from ctypes import *
 from config import Config
@@ -13,7 +14,7 @@ login.login_view = 'auth.login'
 libc = cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'libudfdll.so'))
 db = SQLAlchemy()
 bootstrap = Bootstrap()
-
+cache = Cache()
 
 def dec64(modelid):
     return str(libc.dec64i0(modelid.encode())) + '_' + str(libc.dec64i1(modelid.encode()))
@@ -25,6 +26,7 @@ def create_app(config_class=Config):
     login.init_app(app)
     db.init_app(app)
     bootstrap.init_app(app)
+    cache(app)
 
 
     from app.main import bp as main_bp
