@@ -1,6 +1,5 @@
 from flask import jsonify
 from sqlalchemy import or_, func
-from sqlalchemy.orm import load_only, Load
 
 import config
 from app import db
@@ -21,9 +20,7 @@ def get_models_by_id(search_text):
             func.max(Vollink.barcode),func.max(Vollink.codemodel),func.max(Vol.name).label("Volname"), func.max(Folder.name).label('Foldername')).\
             join(Modelgood, Storage.modelid == Modelgood.id).\
             join(Folder, Storage.folderid == Folder.id).\
-            join(Vollink, Modelgood.id == Vollink.modelid).\
-            join(Vol, Vollink.vol1id == Vol.id).\
-            .group_by(Modelgood.id).\
+            join(Vollink, Modelgood.id == Vollink.modelid).join(Vol, Vollink.vol1id == Vol.id).group_by(Modelgood.id).\
             filter(Vollink.level == '1').\
             filter(Storage.folderid != '0rfarg000os1'). \
             filter(Storage.folderid != '0rfarg000FZh')
