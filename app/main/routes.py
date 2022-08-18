@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask import render_template, flash, redirect, url_for
+from sqlalchemy.orm import load_only
 
 from  config import Config
 from app import db
@@ -64,8 +65,8 @@ def index(page=1):
         join(Folder, Storage.folderid == Folder.id).\
         join(Vollink,Modelgood.id==Vollink.modelid).\
         join(Vol, Vollink.vol1id==Vol.id). \
-        load_only(Storage.count, Storage.p2value, Modelgood.name, Modelgood.imgext,
-                 Vollink.barcode, Vollink.kmin, Vollink.codemodel, Vol.name, Folder.name). \
+        options(load_only(Storage.count, Storage.p2value, Modelgood.name, Modelgood.imgext,
+                 Vollink.barcode, Vollink.kmin, Vollink.codemodel, Vol.name, Folder.name)). \
         filter(Vollink.level=='1').\
         paginate(page,
                                                     Config.MODELGOODS_PER_PAGE,
