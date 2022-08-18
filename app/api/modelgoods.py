@@ -33,11 +33,11 @@ def get_models_by_id(search_text):
             if len(search_text) > 3:
                 search_args = [col.ilike('%%%s%%' % search_text) for col in [Modelgood.name, Vollink.barcode]]
                 base_query = base_query.filter(or_(*search_args))
-        list_to_json = [{"count":sc,"price":sp, 'name':mn, 'id':mi, 'barcde':vb,'code':vc,'volname':vn,"foldername":fn,
+        list_to_json = {'list':[{"count":sc,"price":sp, 'name':mn, 'id':mi, 'barcde':vb,'code':vc,'volname':vn,"foldername":fn,
                         "img_url": "http://" + config.Config.serverdb + '''/img/''' + (dec64(mi)+'.'+mimext) if
                         mimext else None}
                         for sc,sp, mn, mi,mimext, vb,vc,vn,fn in
                         base_query.paginate(1,
                                             Config.MODELGOODS_PER_PAGE,
-                                            False).items]
+                                            False).items]}
         return jsonify(list_to_json)
