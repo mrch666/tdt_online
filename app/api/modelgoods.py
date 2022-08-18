@@ -21,6 +21,8 @@ def get_models_by_id(searchtext):
             join(Folder, Storage.folderid == Folder.id).\
             join(Vollink,Modelgood.id==Vollink.modelid).\
             join(Vol, Vollink.vol1id==Vol.id).\
+            loadonly(Storage.count, Storage.p2value,Modelgood.name,Modelgood.imgext,
+                     Vollink.barcode,Vollink.kmin,Vollink.codemodel,Vol.name,Folder.name).\
             filter(Vollink.level=='1'). \
             filter(Storage.folderid != '0rfarg000os1'). \
             filter(Storage.folderid != '0rfarg000FZh')
@@ -35,7 +37,8 @@ def get_models_by_id(searchtext):
             basequery = basequery.filter(or_(*search_args))
     list=[(s.to_dict(),m.to_dict(),v.to_dict(),vl.to_dict(),fl.to_dict(),
            {"imageurl":"http://"+config.Config.serverdb+'''/img/'''+m.imagename() if m.imagename() else None}) for s,m,v,vl,fl in
-        basequery.\
-        # filter(Modelgood.name.ilike(f'%{searchtext}%')).\
-                   all()]
+        basequery. \
+            paginate(1,
+                     Config.MODELGOODS_PER_PAGE,
+                     False).items]
     return jsonify(list)
