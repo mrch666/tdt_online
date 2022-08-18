@@ -1,5 +1,5 @@
 from flask import jsonify
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import load_only, Load
 
 import config
@@ -17,11 +17,13 @@ def get_model_by_id(id):
 @bp.route('/modelgoods/search/<string:search_text>', methods=['GET'])
 def get_models_by_id(search_text):
     if len(search_text) > 3:
-        base_query = db.session.query(Storage, Modelgood, Vollink, Vol, Folder). \
+        base_query = db.session.query(func.sum(Storage.count),func.max(Storage.p2value), func.max(Modelgood.name),func.max(Modelgood.id),
+            func.max(Vollink.barcode),func.max(Vollink.codemodel),func.max(Vol.name).label("Volname"), func.max(Folder.name).label('Foldername')).\
             join(Modelgood, Storage.modelid == Modelgood.id).\
             join(Folder, Storage.folderid == Folder.id).\
             join(Vollink, Modelgood.id == Vollink.modelid).\
             join(Vol, Vollink.vol1id == Vol.id).\
+            .group_by(Modelgood.id).\
             filter(Vollink.level == '1').\
             filter(Storage.folderid != '0rfarg000os1'). \
             filter(Storage.folderid != '0rfarg000FZh')
