@@ -18,7 +18,6 @@ def get_model_by_id(id):
 def get_models_by_id(search_text):
     if len(search_text) > 3:
         base_query = db.session.query(Storage, Modelgood, Vollink, Vol, Folder). \
-            options(Load(Storage).options(load_only(Storage.count,Storage.p2value))). \
             join(Modelgood, Storage.modelid == Modelgood.id).\
             join(Folder, Storage.folderid == Folder.id).\
             join(Vollink, Modelgood.id == Vollink.modelid).\
