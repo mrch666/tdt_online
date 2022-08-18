@@ -21,7 +21,7 @@ def get_models_by_id(searchtext):
             join(Folder, Storage.folderid == Folder.id).\
             join(Vollink,Modelgood.id==Vollink.modelid).\
             join(Vol, Vollink.vol1id==Vol.id).\
-            loadonly(Storage.count, Storage.p2value,Modelgood.name,Modelgood.imgext,
+            loadonly(Storage.count, Storage.p2value,Modelgood.id,Modelgood.name,Modelgood.imgext,
                      Vollink.barcode,Vollink.kmin,Vollink.codemodel,Vol.name,Folder.name).\
             filter(Vollink.level=='1'). \
             filter(Storage.folderid != '0rfarg000os1'). \
