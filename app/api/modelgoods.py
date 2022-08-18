@@ -1,6 +1,6 @@
 from flask import jsonify
 from sqlalchemy import or_
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import load_only, Load
 
 import config
 from app import db
@@ -18,16 +18,12 @@ def get_model_by_id(id):
 def get_models_by_id(search_text):
     if len(search_text) > 3:
         base_query = db.session.query(Storage, Modelgood, Vollink, Vol, Folder). \
-            options(load_only(Storage.count, Storage.p2value)). \
-            join(Modelgood, Storage.modelid == Modelgood.id). \
-            options(load_only( Modelgood.name, Modelgood.imgext)). \
-            join(Folder, Storage.folderid == Folder.id). \
-            options(load_only( Folder.name)). \
-            join(Vollink, Modelgood.id == Vollink.modelid). \
-            options(load_only(Vollink.barcode, Vollink.kmin, Vollink.codemodel)). \
-            join(Vol, Vollink.vol1id == Vol.id). \
-            options(load_only( Vol.name)). \
-            filter(Vollink.level == '1'). \
+            options(Load(Storage).options(load_only(Storage.count,Storage.p2value))). \
+            join(Modelgood, Storage.modelid == Modelgood.id).\
+            join(Folder, Storage.folderid == Folder.id).\
+            join(Vollink, Modelgood.id == Vollink.modelid).\
+            join(Vol, Vollink.vol1id == Vol.id).\
+            filter(Vollink.level == '1').\
             filter(Storage.folderid != '0rfarg000os1'). \
             filter(Storage.folderid != '0rfarg000FZh')
         if " " in search_text:
