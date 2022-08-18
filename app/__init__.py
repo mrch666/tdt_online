@@ -26,7 +26,7 @@ def create_app(config_class=Config):
     login.init_app(app)
     db.init_app(app)
     bootstrap.init_app(app)
-    cache(app)
+    cache.init_app(app)
 
 
     from app.main import bp as main_bp
