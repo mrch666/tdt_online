@@ -1,17 +1,32 @@
-# Project Setup
+# FastAPI приложение для работы с товарами
 
-## Environment Variables Configuration
+## Требования
+- Python 3.8+
+- Firebird Database
+- Установленные зависимости из requirements.txt
 
-1. Copy the example environment file:
-```cmd
-copy .env.example .env
+## Установка
+1. Скопируйте .env.example в .env и заполните настройки:
+   ```bash
+   cp .env.example .env
+   ```
+2. Установите зависимости:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Переменные окружения (.env)
+- `DATABASE_URL` - URL подключения к Firebird
+- `DEBUG` - Режим отладки (True/False)
+- `SECRET_KEY` - Секретный ключ приложения
+- `IMG_STORAGE_PATH` - Путь для хранения изображений
+
+## Запуск
+```bash
+uvicorn app.main:app --reload
 ```
 
-2. Edit the `.env` file with your actual credentials:
-```env
-FIREBIRD_HOST=localhost         # Firebird server host
-FIREBIRD_PORT=3055              # Firebird server port
-FIREBIRD_DB=C:\path\to\db.fdb   # Path to database file
-FIREBIRD_USER=your_username     # Database username
-FIREBIRD_PASSWORD=your_password # Database password
-```
+## Примеры API
+- Получение списка товаров: `GET /products/`
+- Загрузка изображения: `POST /modelgoods/image/`
+- Проверка здоровья: `GET /healthcheck`
