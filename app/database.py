@@ -18,6 +18,7 @@ SQLALCHEMY_DATABASE_URL = (
 )
 
 # Создаем движок с явным указанием пути к клиентской библиотеке
+logging.info(str(os.path.join(os.getenv('BASE_DIR'), "fbclient.dll")))
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={
