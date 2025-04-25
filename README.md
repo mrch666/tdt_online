@@ -13,7 +13,9 @@
 - Регулярно обновляйте секретные ключи
 
 ## Требования
-- Python 3.8+
+- Python 3.12.10 (рекомендуется для Windows)  
+  Скачать: [python-3.12.10-amd64.exe](https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe)  
+  Все версии: [python.org/downloads/windows/](https://www.python.org/downloads/windows/)
 - Firebird Database
 - Установленные зависимости из requirements.txt
 
