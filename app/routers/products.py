@@ -15,9 +15,10 @@ router = APIRouter(prefix="/products", tags=["products"])
 @router.get("/", response_model=List[ProductResponse])
 def get_products(db: Session = Depends(get_db)):
     desc_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('DESC_SUBDIR'))
+    logging.info(f"desc_path: {str(desc_path)}" )
     try:
         query = text("""
-            SELECT FIRST 50
+            SELECT FIRST 100
                 mg."id" AS "modelid",
                 mg."name",
                 LIST('на складе: ' || f."name" || ' - ' || (s."count"/v."kmin") || ' ' || vl."name" || '
@@ -35,7 +36,7 @@ def get_products(db: Session = Depends(get_db)):
             JOIN "vol" vl ON (vl."id" = v."vol1id")
             JOIN "storage" s ON (s."modelid" = mg."id" AND s."count" > 0.0 AND s."count" IS NOT NULL)
             JOIN "folders" f ON (s."folderid" = f."id" AND f."istrailer" = '0')
-            WHERE FBFILEEXISTS(:path || dec64i0(mg."id") || '_' || dec64i1(mg."id") || '.dat')=0
+            WHERE FBFILEEXISTS(:path || '/' ||dec64i0(mg."id") || '_' || dec64i1(mg."id") || '.dat')=0
             GROUP BY mg."id", mg."name", 
                 (dec64i0(mg."id") || '_' || dec64i1(mg."id") || '.' || mg."imgext"),
                 v."barcode", v."codemodel", v."kmin", vl."name", mg."wlink"

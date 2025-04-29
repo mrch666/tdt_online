@@ -10,7 +10,15 @@ from app.models import Modelgoods
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/modelgoods", tags=["modelgoods"])
 
-@router.post("/", response_model=ModelgoodsResponse)
+@router.post(
+    "/", 
+    response_model=ModelgoodsResponse,
+    summary="Создание новой модели товара",
+    response_description="Созданная модель товара",
+    responses={
+        201: {"description": "Модель успешно создана"},
+        400: {"description": "Некорректные данные модели"},
+    })
 def create_modelgoods(modelgoods: ModelgoodsCreate, db: Session = Depends(get_db)):
     db_modelgoods = Modelgoods(**modelgoods.dict())
     db.add(db_modelgoods)
@@ -24,11 +32,26 @@ def create_modelgoods(modelgoods: ModelgoodsCreate, db: Session = Depends(get_db
         raise HTTPException(400, detail=str(e))
     return db_modelgoods
 
-@router.get("/", response_model=List[ModelgoodsResponse])
+@router.get(
+    "/",
+    response_model=List[ModelgoodsResponse],
+    summary="Получение списка моделей товаров",
+    response_description="Список моделей товаров",
+    responses={
+        200: {"description": "Успешное получение списка"},
+    })
 def read_modelgoods(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(Modelgoods).offset(skip).limit(limit).all()
 
-@router.get("/{modelgoods_id}", response_model=ModelgoodsResponse)
+@router.get(
+    "/{modelgoods_id}", 
+    response_model=ModelgoodsResponse,
+    summary="Получение модели товара по ID",
+    response_description="Данные модели товара",
+    responses={
+        200: {"description": "Модель найдена"},
+        404: {"description": "Модель не найдена"},
+    })
 def read_modelgoods(modelgoods_id: str, db: Session = Depends(get_db)):
     modelgoods = db.query(Modelgoods).filter(Modelgoods.id == modelgoods_id).first()
     if not modelgoods:
@@ -36,7 +59,16 @@ def read_modelgoods(modelgoods_id: str, db: Session = Depends(get_db)):
         raise HTTPException(404, detail="Modelgoods not found")
     return modelgoods
 
-@router.put("/{modelgoods_id}", response_model=ModelgoodsResponse)
+@router.put(
+    "/{modelgoods_id}", 
+    response_model=ModelgoodsResponse,
+    summary="Обновление данных модели товара",
+    response_description="Обновленные данные модели",
+    responses={
+        200: {"description": "Модель успешно обновлена"},
+        404: {"description": "Модель не найдена"},
+        400: {"description": "Ошибка валидации данных"},
+    })
 def update_modelgoods(
     modelgoods_id: str,
     modelgoods: ModelgoodsCreate,
@@ -59,7 +91,14 @@ def update_modelgoods(
         raise HTTPException(400, detail=str(e))
     return db_modelgoods
 
-@router.delete("/{modelgoods_id}")
+@router.delete(
+    "/{modelgoods_id}",
+    summary="Удаление модели товара",
+    response_description="Результат удаления",
+    responses={
+        200: {"description": "Модель успешно удалена"},
+        404: {"description": "Модель не найдена"},
+    })
 def delete_modelgoods(modelgoods_id: str, db: Session = Depends(get_db)):
     modelgoods = db.query(Modelgoods).filter(Modelgoods.id == modelgoods_id).first()
     if not modelgoods:
