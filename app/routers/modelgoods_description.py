@@ -71,20 +71,21 @@ def save_description_to_file(product_id: str, desc: str, db: Session):
 async def get_model_description(
     modelid: str,
     db: Session = Depends(get_db),
-    code: str = Query(..., description="Код товара"),
-    name: str = Query(..., description="Название товара")
+
 ):
     try:
         result = db.execute(
             text("""
                 SELECT loadblobfromfile(
-                    f'{{os.path.join(os.getenv("BASE_DIR"), os.getenv("DESC_SUBDIR"))}}{os.sep}'
-                    || dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.dat'
+                    :desc_dir || dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.dat'
                 ) as dat 
                 FROM "modelgoods" 
                 WHERE "id" = :modelid
             """),
-            {"modelid": modelid}
+            {
+                "modelid": modelid,
+                "desc_dir": os.path.join(os.getenv('BASE_DIR'), os.getenv('DESC_SUBDIR')) + os.sep
+            }
         ).fetchone()
 
         if not result or not result[0]:
