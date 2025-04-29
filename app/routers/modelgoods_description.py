@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+import os
 import logging
 import tempfile
 import zipfile
@@ -31,7 +32,8 @@ def save_description_to_file(product_id: str, desc: str, db: Session):
             desc = str(desc).strip(' ').replace('&mdash;', "-")
             desc = desc.replace('\n',"<br>\n")
             desc = f'<div>{desc}</div>'
-            sql = """SELECT * FROM \"wp_SaveBlobToFile\"('C:\\Program Files (x86)\\tdt3\\bases\\desc\\', dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.dat',:zip_file)"""
+            desc_dir = os.path.join(os.getenv('BASE_DIR'), os.getenv('DESC_SUBDIR')) + os.sep
+            sql = f"""SELECT * FROM \"wp_SaveBlobToFile\"('{desc_dir}', dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.dat',:zip_file)"""
             
             obj_zip = tempfile.TemporaryFile(delete=False)
             try:
@@ -68,13 +70,15 @@ def save_description_to_file(product_id: str, desc: str, db: Session):
 )
 async def get_model_description(
     modelid: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    code: str = Query(..., description="Код товара"),
+    name: str = Query(..., description="Название товара")
 ):
     try:
         result = db.execute(
             text("""
                 SELECT loadblobfromfile(
-                    'C:\\Program Files (x86)\\tdt3\\bases\\desc\\' 
+                    f'{{os.path.join(os.getenv("BASE_DIR"), os.getenv("DESC_SUBDIR"))}}{os.sep}'
                     || dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.dat'
                 ) as dat 
                 FROM "modelgoods" 
