@@ -68,8 +68,6 @@ def save_description_to_file(product_id: str, desc: str, db: Session):
 )
 async def get_model_description(
     modelid: str,
-    code: str = Query(..., description="Код товара"),
-    name: str = Query(..., description="Название товара"),
     db: Session = Depends(get_db)
 ):
     try:
@@ -89,7 +87,7 @@ async def get_model_description(
             raise HTTPException(404, "Описание не найдено")
 
         zip_data = io.BytesIO(result[0])
-        description = name  # Default to name if description not found
+        
         
         with zipfile.ZipFile(zip_data, "r") as zip_file:
             for filename in zip_file.namelist():
