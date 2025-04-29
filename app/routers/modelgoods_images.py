@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 import logging
@@ -18,36 +19,30 @@ def save_description_to_file(product_id: str, desc: str, db: Session):
         raise HTTPException(400, "Invalid product ID or description")
     
     try:
-        desc = desc.strip().replace('&mdash;', "-")
-        desc = desc.replace('\n', "<br>\n")
-        desc_html = f'<div>{desc}</div>'
-        
-        sql = text("""SELECT * FROM "wp_SaveBlobToFile"(
-            :base_path, 
-            dec64i0(:product_id) || '_' || dec64i1(:product_id) || :ext, 
-            :zip_data
-        )""")
-        
-        base_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('DESC_SUBDIR'))
-        
-        with tempfile.TemporaryFile() as tmp_file:
-            with zipfile.ZipFile(tmp_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                zipf.writestr('desc.txt', desc_html)
-            
-            tmp_file.seek(0)
-            zip_data = tmp_file.read()
-        
-        db.execute(sql, {
-            "base_path": base_path,
-            "product_id": product_id,
-            "ext": ".dat",
-            "zip_data": zip_data
-        })
-        db.commit()
-        
-        db.execute(text("""UPDATE "modelgoods" SET "changedate"=current_timestamp WHERE "id"=:id"""), 
-                 {"id": product_id})
-        db.commit()
+     if product_id and desc:
+        desc = str(desc).strip(' ').replace('&amp;mdash;', "-")
+        desc=desc.replace('\n',"<br>\n")
+        desc = f'<div>{desc}</div>'
+        print(desc)
+        sql="""SELECT * FROM \"wp_SaveBlobToFile\"('C:\\Program Files (x86)\\tdt3\\bases\\desc\\', dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.dat',:zip_file)"""
+        print(sql)
+        #dec_id = decModelID(product_id)
+        obj_zip = tempfile.TemporaryFile(delete=False)
+        try:
+            zip_path_temp = obj_zip.name
+            with zipfile.ZipFile(zip_path_temp, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+                zip_file.writestr('desc.txt', desc)
+
+            with open(zip_path_temp, 'rb') as zip_file:
+                db.execute(text(sql), {'modelid':product_id,"zip_file": zip_file}).fetchall()
+            db.commit()
+            db.execute(text("""UPDATE "modelgoods" SET "changedate"=current_timestamp where "id"=:id"""), {"id": product_id})
+            db.commit()
+            print("Успешно записали описание", product_id)
+        except Exception as e:
+            print(f'Не удалось записать описание товара {product_id}',e)
+        finally:
+            obj_zip.close()
         
         return {"status": "success"}
         
@@ -116,18 +111,19 @@ async def upload_model_image(
         logger.error(f"Image upload error: {str(e)}")
         raise HTTPException(500, "Internal server error")
 
-@router.post("/description/")
+class DescriptionInput(BaseModel):
+    description: str
+
+@router.post("/description/{modelid}")
 async def upload_model_description(
     request: Request,
-    modelid: str = Form(...),
+    modelid: str,  # modelid из URL пути
+    data: DescriptionInput,  # автоматическая валидация JSON тела
     db: Session = Depends(get_db)
 ):
     try:
-        content = await request.json()
-        if "description" not in content:
-            raise HTTPException(400, "Description field is required")
-        
-        return save_description_to_file(modelid, content["description"], db)
+               
+        return save_description_to_file(modelid, data.description, db)
         
     except json.JSONDecodeError:
         raise HTTPException(400, "Invalid JSON format")
