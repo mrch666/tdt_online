@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -6,6 +6,8 @@ import logging
 import tempfile
 import zipfile
 import json
+import io
+import re
 
 from app.database import get_db
 
@@ -53,6 +55,71 @@ def save_description_to_file(product_id: str, desc: str, db: Session):
         db.rollback()
         logger.error(f"Error saving description: {str(e)}")
         raise HTTPException(500, "Description save failed")
+
+@router.get(
+    "/{modelid}",
+    summary="Получение текстового описания товара",
+    response_description="Текст описания товара",
+    responses={
+        200: {"description": "Описание успешно получено"},
+        404: {"description": "Описание не найдено"},
+        500: {"description": "Ошибка сервера при получении"},
+    },
+)
+async def get_model_description(
+    modelid: str,
+    code: str = Query(..., description="Код товара"),
+    name: str = Query(..., description="Название товара"),
+    db: Session = Depends(get_db)
+):
+    try:
+        result = db.execute(
+            text("""
+                SELECT loadblobfromfile(
+                    'C:\\Program Files (x86)\\tdt3\\bases\\desc\\' 
+                    || dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.dat'
+                ) as dat 
+                FROM "modelgoods" 
+                WHERE "id" = :modelid
+            """),
+            {"modelid": modelid}
+        ).fetchone()
+
+        if not result or not result[0]:
+            raise HTTPException(404, "Описание не найдено")
+
+        zip_data = io.BytesIO(result[0])
+        description = name  # Default to name if description not found
+        
+        with zipfile.ZipFile(zip_data, "r") as zip_file:
+            for filename in zip_file.namelist():
+                try:
+                    with zip_file.open(filename, 'r') as f:
+                        content = f.read()
+                        
+                        # Try UTF-8 decoding first
+                        try:
+                            text_content = content.decode('utf-8')
+                        except UnicodeDecodeError:
+                            text_content = content.decode('cp1251')
+                            
+                        # Clean HTML tags and attributes
+                        cleaned_content = re.sub(r'(class|id)=".*?"', '', text_content)
+                        cleaned_content = re.sub(r'<form[\s\S]+?</form>', '', cleaned_content)
+                        
+                        if cleaned_content.strip():
+                            description = cleaned_content
+                            break
+                            
+                except Exception as e:
+                    logger.error(f"Ошибка чтения файла {filename}: {str(e)}")
+                    continue
+
+        return {"description": description}
+
+    except Exception as e:
+        logger.error(f"Ошибка получения описания: {str(e)}")
+        raise HTTPException(500, "Internal server error")
 
 @router.post(
     "/{modelid}",
