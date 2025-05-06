@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 import logging
+from datetime import datetime, timedelta
 
 from app.schemas.modelgoods import ModelgoodsCreate, ModelgoodsResponse
 from app.database import get_db
-from app.models import Modelgoods
+from app.models import Modelgoods, Storage, Docstorage, Docs
 
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/modelgoods", tags=["modelgoods"])
@@ -58,6 +59,55 @@ def read_modelgoods(modelgoods_id: str, db: Session = Depends(get_db)):
         logger.warning(f"Modelgoods {modelgoods_id} not found")
         raise HTTPException(404, detail="Modelgoods not found")
     return modelgoods
+
+@router.get(
+    "/unsold/recent",
+    response_model=List[ModelgoodsResponse],
+    summary="Получение непродающихся товаров",
+    response_description="Список товаров с остатками без документов",
+    responses={
+        200: {
+            "description": "Успешное получение списка",
+            "content": {
+                "application/json": {
+                    "example": [{
+                        "id": "MODEL_123",
+                        "name": "Example Product",
+                        "typeid": "TYPE_456",
+                        "changedate": "2025-05-06T14:30:00"
+                    }]
+                }
+            }
+        },
+    },
+    description="""
+    Возвращает список из 100 товаров, которые:
+    - Имеют остатки на складах (count > 0)
+    - Не появлялись в документах продаж/перемещений за последние 180 дней
+    - Отсортированы по дате последнего изменения (новые первыми)
+    
+    Логика работы:
+    1. Выборка товаров с остатками
+    2. Исключение товаров, присутствующих в документах за последние полгода
+    3. Сортировка по дате изменения
+    """)
+def get_unsold_goods(db: Session = Depends(get_db)):
+    ninety_days_ago = datetime.now() - timedelta(days=180)
+    
+    subquery = db.query(Docstorage.docid).join(Docs, Docs.id == Docstorage.docid).filter(
+        Docstorage.modelid == Modelgoods.id,
+        Docs.docdate >= ninety_days_ago
+    ).correlate(Modelgoods).exists()
+
+    return db.query(Modelgoods)\
+        .join(Storage, Storage.modelid == Modelgoods.id)\
+        .filter(
+            Storage.count > 0,
+            ~subquery
+        )\
+        .order_by(Modelgoods.changedate.desc())\
+        .limit(100)\
+        .all()
 
 @router.put(
     "/{modelgoods_id}", 
