@@ -715,6 +715,14 @@ class Linkedid(Base):
         name='strid')
 
 
+def dec64i0(model_id: str) -> str:
+    """Конвертирует ID модели в первую часть имени файла"""
+    return model_id.ljust(14, '0')[:14]
+
+def dec64i1(model_id: str) -> str:
+    """Конвертирует ID модели во вторую часть имени файла"""
+    return model_id.ljust(14, '0')[14:]
+
 class Modelgoods(Base):
     __tablename__ = 'modelgoods'
     __table_args__ = Index('IAlpha2_modelgoods', 'typeid', 'firmaid',
