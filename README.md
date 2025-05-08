@@ -45,6 +45,8 @@ uvicorn app.main:app --reload
 - Получение последних 50 товаров без описаний в файле: `GET /products/`
 - Загрузка изображения: `POST /modelgoods/image/`
 - Проверка здоровья системы: `GET /healthcheck`
+- Сохранение параметров товара: `POST /modelgoods/parameters/{model_id}`
+- Получение параметров товара: `GET /modelgoods/parameters/{model_id}`
 
 ## Тестирование
 ```bash

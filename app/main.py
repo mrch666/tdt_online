@@ -10,7 +10,7 @@ import os
 import json
 import time
 
-from app.routers import users, modelgoods, products, modelgoods_images, modelgoods_description
+from app.routers import users, modelgoods, products, modelgoods_images, modelgoods_description, modelgoods_search, modelgoods_parameters
 
 # Настройка продвинутого логирования
 logging.basicConfig(
@@ -39,6 +39,8 @@ app.include_router(modelgoods.router)
 app.include_router(products.router)
 app.include_router(modelgoods_images.router)
 app.include_router(modelgoods_description.router)
+app.include_router(modelgoods_search.router)
+app.include_router(modelgoods_parameters.router)
 
 # Мидлварь для логирования
 @app.middleware("http")
