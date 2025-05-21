@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Управление параметрами товаров{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Параметры товара</h2>
+        <div id="parameters-list" hx-get="/api/modelgoods/parameters?search={{ request.args.get('search', '') }}" hx-trigger="load" hx-include="[name='search']">
+            Загрузка данных...
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Добавить параметр</h5>
+                <form hx-post="/api/modelgoods/parameters" hx-include="[name='search']">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" name="name" placeholder="Название параметра" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" class="form-control" name="value" placeholder="Значение" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
