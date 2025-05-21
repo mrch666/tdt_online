@@ -15,7 +15,7 @@ import zipfile
 from typing import Dict, Any
 from pydantic import BaseModel, Field
 from app.database import get_db
-from app.models import dec64i0, dec64i1
+
 
 router = APIRouter(prefix="/modelgoods/parameters", tags=["modelgoods"])
 

@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import cast, String, text, bindparam
 from app.database import get_db
 from app.models import Storage, Modelgoods,Folders
 from app.routers import modelgoods_parameters
@@ -24,10 +25,19 @@ async def read_root(
     request: Request, 
     db: Session = Depends(get_db),
     page: int = 1,
-    per_page: int = 10
+    per_page: int = 10,
+    search: str = None
 ):
     # Calculate pagination offsets
-    total_items = db.query(Storage).count()
+    base_query = db.query(Storage, Modelgoods)\
+        .join(Modelgoods, Storage.modelid == Modelgoods.id)\
+        .join(Folders, Storage.folderid == Folders.id)\
+        .filter(Folders.istrailer == 0)
+        
+    if search:
+        base_query = base_query.filter(Modelgoods.name.ilike(f"%{search}%"))
+        
+    total_items = base_query.count()
     total_pages = (total_items + per_page - 1) // per_page
     
     # Get paginated results
@@ -35,6 +45,7 @@ async def read_root(
         .join(Modelgoods, Storage.modelid == Modelgoods.id)\
         .join(Folders, Storage.folderid == Folders.id)\
         .filter(Folders.istrailer == 0)\
+        .filter(text('"modelgoods"."name" LIKE :search_term').bindparams(bindparam('search_term', value=f"%{search}%", type_=String)))\
         .order_by(Modelgoods.name)\
         .offset((page-1)*per_page)\
         .limit(per_page)\
