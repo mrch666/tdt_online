@@ -1355,8 +1355,8 @@ class Users(Base):
     id = Column(String(50), primary_key=True, quote=True, name='id')
     peopleid = Column(String(50), quote=True, name='peopleid')
     rangid = Column(String(50), quote=True, name='rangid')
-    username = Column(String(50), unique=True, index=True, quote=True, name='username', comment='TRIM_WHITESPACE')
-    password = Column(String(100), quote=True, name='password', comment='TRIM_WHITESPACE') 
+    username = Column(String(50), unique=True, index=True, nullable=False, quote=True, name='username', comment='TRIM_WHITESPACE')
+    password = Column(String(100), nullable=False, quote=True, name='password', comment='TRIM_WHITESPACE')
     userid = Column(String(50), quote=True, name='userid')
     changedate = Column(DateTime, quote=True, name='changedate')
     lasttime = Column(DateTime, quote=True, name='lasttime')
@@ -1462,3 +1462,5 @@ class Zatratdict(Base):
     name = Column(Text(100), quote=True, name='name')
     userid = Column(Text(12), server_default=text("'0'"))
     changedate = Column(DateTime, quote=True, name='changedate')
+
+

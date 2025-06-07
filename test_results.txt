@@ -1,0 +1,197 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.8.5, pytest-8.3.5, pluggy-1.5.0 -- d:\python projects\fastapi\env\scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Python Projects\fastapi
+collecting ... collected 6 items
+
+tests/test_modelgoods_parameters.py::test_create_and_get_parameter FAILED [ 16%]
+tests/test_modelgoods_parameters.py::test_update_parameter FAILED        [ 33%]
+tests/test_modelgoods_parameters.py::test_get_full_xml FAILED            [ 50%]
+tests/test_modelgoods_parameters.py::test_parameter_not_found FAILED     [ 66%]
+tests/test_modelgoods_parameters.py::test_invalid_parameter_name FAILED  [ 83%]
+tests/test_modelgoods_parameters.py::test_server_error_handling ERROR    [100%]
+
+=================================== ERRORS ====================================
+________________ ERROR at setup of test_server_error_handling _________________
+file D:\Python Projects\fastapi\tests\test_modelgoods_parameters.py, line 91
+  def test_server_error_handling(client, mocker):
+E       fixture 'mocker' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\Python Projects\fastapi\tests\test_modelgoods_parameters.py:91
+================================== FAILURES ===================================
+________________________ test_create_and_get_parameter ________________________
+
+client = <starlette.testclient.TestClient object at 0x0533B280>
+
+    def test_create_and_get_parameter(client):
+        # ╨в╨╡╤Б╤В ╤Б╨╛╨╖╨┤╨░╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨░
+        response = client.post(
+            "/modelgoods/parameters/test123/weight",
+            json={"value": "42"}
+        )
+>       assert response.status_code == 200
+E       assert 500 == 200
+E        +  where 500 = <Response [500]>.status_code
+
+tests\test_modelgoods_parameters.py:42: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    api:modelgoods_parameters.py:198 Database query error: (sqlite3.OperationalError) no such table: modelgoods
+[SQL: 
+                    SELECT loadblobfromfile(?)
+                    FROM "modelgoods" 
+                    WHERE "id" = ?
+                ]
+[parameters: ('C:\\Program Files (x86)\\tdt3\\bases\\params\\test1230000000_.xml', 'test123')]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+ERROR    api:modelgoods_parameters.py:253 ╨Ю╤И╨╕╨▒╨║╨░ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓: (500, 'Failed to execute database query')
+ERROR    api:modelgoods_parameters.py:62 Error saving parameters: (500, 'Failed to save parameters: (sqlite3.OperationalError) no such table: wp_SaveBlobToFile\n[SQL: SELECT * FROM "wp_SaveBlobToFile"(\'C:\\Program Files (x86)\\tdt3\\bases\\params\\\', dec64i0(?) || \'_\' || dec64i1(?) || \'.xml\',?)]\n[parameters: (\'test123\', \'test123\', b\'<?xml version="1.0" encoding="UTF-8"?>\\n<?xml encoding="UTF-8" version=\\\'1.0\\\' encoding=\\\'windows-1251\\\'?>\\n<data><weight>42</weight></data>\')]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)')
+ERROR    api:modelgoods_parameters.py:85 Parameters upload error: (500, 'Parameters save failed')
+ERROR    api:modelgoods_parameters.py:175 ╨Ю╤И╨╕╨▒╨║╨░ ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨░: (500, 'Internal server error')
+____________________________ test_update_parameter ____________________________
+
+client = <starlette.testclient.TestClient object at 0x05390D00>
+
+    def test_update_parameter(client):
+        # ╨б╨╛╨╖╨┤╨░╨╡╨╝ ╨┐╨░╤А╨░╨╝╨╡╤В╤А
+        client.post("/modelgoods/parameters/test123/weight", json={"value": "42"})
+    
+        # ╨Ю╨▒╨╜╨╛╨▓╨╗╤П╨╡╨╝ ╨┐╨░╤А╨░╨╝╨╡╤В╤А
+        response = client.post(
+            "/modelgoods/parameters/test123/weight",
+            json={"value": "45"}
+        )
+>       assert response.status_code == 200
+E       assert 500 == 200
+E        +  where 500 = <Response [500]>.status_code
+
+tests\test_modelgoods_parameters.py:59: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    api:modelgoods_parameters.py:198 Database query error: (sqlite3.OperationalError) no such table: modelgoods
+[SQL: 
+                    SELECT loadblobfromfile(?)
+                    FROM "modelgoods" 
+                    WHERE "id" = ?
+                ]
+[parameters: ('C:\\Program Files (x86)\\tdt3\\bases\\params\\test1230000000_.xml', 'test123')]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+ERROR    api:modelgoods_parameters.py:253 ╨Ю╤И╨╕╨▒╨║╨░ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓: (500, 'Failed to execute database query')
+ERROR    api:modelgoods_parameters.py:62 Error saving parameters: (500, 'Failed to save parameters: (sqlite3.OperationalError) no such table: wp_SaveBlobToFile\n[SQL: SELECT * FROM "wp_SaveBlobToFile"(\'C:\\Program Files (x86)\\tdt3\\bases\\params\\\', dec64i0(?) || \'_\' || dec64i1(?) || \'.xml\',?)]\n[parameters: (\'test123\', \'test123\', b\'<?xml version="1.0" encoding="UTF-8"?>\\n<?xml encoding="UTF-8" version=\\\'1.0\\\' encoding=\\\'windows-1251\\\'?>\\n<data><weight>42</weight></data>\')]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)')
+ERROR    api:modelgoods_parameters.py:85 Parameters upload error: (500, 'Parameters save failed')
+ERROR    api:modelgoods_parameters.py:175 ╨Ю╤И╨╕╨▒╨║╨░ ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨░: (500, 'Internal server error')
+ERROR    api:modelgoods_parameters.py:198 Database query error: (sqlite3.OperationalError) no such table: modelgoods
+[SQL: 
+                    SELECT loadblobfromfile(?)
+                    FROM "modelgoods" 
+                    WHERE "id" = ?
+                ]
+[parameters: ('C:\\Program Files (x86)\\tdt3\\bases\\params\\test1230000000_.xml', 'test123')]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+ERROR    api:modelgoods_parameters.py:253 ╨Ю╤И╨╕╨▒╨║╨░ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓: (500, 'Failed to execute database query')
+ERROR    api:modelgoods_parameters.py:62 Error saving parameters: (500, 'Failed to save parameters: (sqlite3.OperationalError) no such table: wp_SaveBlobToFile\n[SQL: SELECT * FROM "wp_SaveBlobToFile"(\'C:\\Program Files (x86)\\tdt3\\bases\\params\\\', dec64i0(?) || \'_\' || dec64i1(?) || \'.xml\',?)]\n[parameters: (\'test123\', \'test123\', b\'<?xml version="1.0" encoding="UTF-8"?>\\n<?xml encoding="UTF-8" version=\\\'1.0\\\' encoding=\\\'windows-1251\\\'?>\\n<data><weight>45</weight></data>\')]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)')
+ERROR    api:modelgoods_parameters.py:85 Parameters upload error: (500, 'Parameters save failed')
+ERROR    api:modelgoods_parameters.py:175 ╨Ю╤И╨╕╨▒╨║╨░ ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨░: (500, 'Internal server error')
+______________________________ test_get_full_xml ______________________________
+
+client = <starlette.testclient.TestClient object at 0x058684F0>
+
+    def test_get_full_xml(client):
+        # ╨б╨╛╨╖╨┤╨░╨╡╨╝ ╨╜╨╡╤Б╨║╨╛╨╗╤М╨║╨╛ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓
+        client.post("/modelgoods/parameters/test123/weight", json={"value": "42"})
+        client.post("/modelgoods/parameters/test123/height", json={"value": "150"})
+    
+        # ╨Я╨╛╨╗╤Г╤З╨░╨╡╨╝ ╨┐╨╛╨╗╨╜╤Л╨╣ XML
+        response = client.get("/modelgoods/parameters/test123")
+>       assert response.status_code == 200
+E       assert 500 == 200
+E        +  where 500 = <Response [500]>.status_code
+
+tests\test_modelgoods_parameters.py:72: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    api:modelgoods_parameters.py:198 Database query error: (sqlite3.OperationalError) no such table: modelgoods
+[SQL: 
+                    SELECT loadblobfromfile(?)
+                    FROM "modelgoods" 
+                    WHERE "id" = ?
+                ]
+[parameters: ('C:\\Program Files (x86)\\tdt3\\bases\\params\\test1230000000_.xml', 'test123')]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+ERROR    api:modelgoods_parameters.py:253 ╨Ю╤И╨╕╨▒╨║╨░ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓: (500, 'Failed to execute database query')
+ERROR    api:modelgoods_parameters.py:62 Error saving parameters: (500, 'Failed to save parameters: (sqlite3.OperationalError) no such table: wp_SaveBlobToFile\n[SQL: SELECT * FROM "wp_SaveBlobToFile"(\'C:\\Program Files (x86)\\tdt3\\bases\\params\\\', dec64i0(?) || \'_\' || dec64i1(?) || \'.xml\',?)]\n[parameters: (\'test123\', \'test123\', b\'<?xml version="1.0" encoding="UTF-8"?>\\n<?xml encoding="UTF-8" version=\\\'1.0\\\' encoding=\\\'windows-1251\\\'?>\\n<data><weight>42</weight></data>\')]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)')
+ERROR    api:modelgoods_parameters.py:85 Parameters upload error: (500, 'Parameters save failed')
+ERROR    api:modelgoods_parameters.py:175 ╨Ю╤И╨╕╨▒╨║╨░ ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨░: (500, 'Internal server error')
+ERROR    api:modelgoods_parameters.py:198 Database query error: (sqlite3.OperationalError) no such table: modelgoods
+[SQL: 
+                    SELECT loadblobfromfile(?)
+                    FROM "modelgoods" 
+                    WHERE "id" = ?
+                ]
+[parameters: ('C:\\Program Files (x86)\\tdt3\\bases\\params\\test1230000000_.xml', 'test123')]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+ERROR    api:modelgoods_parameters.py:253 ╨Ю╤И╨╕╨▒╨║╨░ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓: (500, 'Failed to execute database query')
+ERROR    api:modelgoods_parameters.py:62 Error saving parameters: (500, 'Failed to save parameters: (sqlite3.OperationalError) no such table: wp_SaveBlobToFile\n[SQL: SELECT * FROM "wp_SaveBlobToFile"(\'C:\\Program Files (x86)\\tdt3\\bases\\params\\\', dec64i0(?) || \'_\' || dec64i1(?) || \'.xml\',?)]\n[parameters: (\'test123\', \'test123\', b\'<?xml version="1.0" encoding="UTF-8"?>\\n<?xml encoding="UTF-8" version=\\\'1.0\\\' encoding=\\\'windows-1251\\\'?>\\n<data><height>150</height></data>\')]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)')
+ERROR    api:modelgoods_parameters.py:85 Parameters upload error: (500, 'Parameters save failed')
+ERROR    api:modelgoods_parameters.py:175 ╨Ю╤И╨╕╨▒╨║╨░ ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨░: (500, 'Internal server error')
+ERROR    api:modelgoods_parameters.py:198 Database query error: (sqlite3.OperationalError) no such table: modelgoods
+[SQL: 
+                    SELECT loadblobfromfile(?)
+                    FROM "modelgoods" 
+                    WHERE "id" = ?
+                ]
+[parameters: ('C:\\Program Files (x86)\\tdt3\\bases\\params\\test1230000000_.xml', 'test123')]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+ERROR    api:modelgoods_parameters.py:253 ╨Ю╤И╨╕╨▒╨║╨░ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓: (500, 'Failed to execute database query')
+__________________________ test_parameter_not_found ___________________________
+
+client = <starlette.testclient.TestClient object at 0x05868E68>
+
+    def test_parameter_not_found(client):
+        response = client.get("/modelgoods/parameters/test123/weight")
+>       assert response.status_code == 404
+E       assert 500 == 404
+E        +  where 500 = <Response [500]>.status_code
+
+tests\test_modelgoods_parameters.py:81: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    api:modelgoods_parameters.py:198 Database query error: (sqlite3.OperationalError) no such table: modelgoods
+[SQL: 
+                    SELECT loadblobfromfile(?)
+                    FROM "modelgoods" 
+                    WHERE "id" = ?
+                ]
+[parameters: ('C:\\Program Files (x86)\\tdt3\\bases\\params\\test1230000000_.xml', 'test123')]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+ERROR    api:modelgoods_parameters.py:253 ╨Ю╤И╨╕╨▒╨║╨░ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓: (500, 'Failed to execute database query')
+_________________________ test_invalid_parameter_name _________________________
+
+client = <starlette.testclient.TestClient object at 0x05899208>
+
+    def test_invalid_parameter_name(client):
+        response = client.post(
+            "/modelgoods/parameters/test123/",
+            json={"value": "42"}
+        )
+>       assert response.status_code == 404
+E       assert 307 == 404
+E        +  where 307 = <Response [307]>.status_code
+
+tests\test_modelgoods_parameters.py:89: AssertionError
+============================== warnings summary ===============================
+env\lib\site-packages\starlette\formparsers.py:8
+  d:\python projects\fastapi\env\lib\site-packages\starlette\formparsers.py:8: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+app\database.py:40
+  D:\Python Projects\fastapi\app\database.py:40: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_modelgoods_parameters.py::test_create_and_get_parameter - a...
+FAILED tests/test_modelgoods_parameters.py::test_update_parameter - assert 50...
+FAILED tests/test_modelgoods_parameters.py::test_get_full_xml - assert 500 ==...
+FAILED tests/test_modelgoods_parameters.py::test_parameter_not_found - assert...
+FAILED tests/test_modelgoods_parameters.py::test_invalid_parameter_name - ass...
+ERROR tests/test_modelgoods_parameters.py::test_server_error_handling
+=================== 5 failed, 2 warnings, 1 error in 1.01s ====================

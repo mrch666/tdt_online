@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from typing import Optional
 import os
 import logging
 import tempfile
@@ -58,21 +59,7 @@ def save_description_to_file(product_id: str, desc: str, db: Session):
         logger.error(f"Error saving description: {str(e)}")
         raise HTTPException(500, "Description save failed")
 
-@router.get(
-    "/{modelid}",
-    summary="Получение текстового описания товара",
-    response_description="Текст описания товара",
-    responses={
-        200: {"description": "Описание успешно получено"},
-        404: {"description": "Описание не найдено"},
-        500: {"description": "Ошибка сервера при получении"},
-    },
-)
-async def get_model_description(
-    modelid: str,
-    db: Session = Depends(get_db),
-
-):
+def get_model_description_sync(modelid: str, db: Session) -> Optional[str]:
     try:
         result = db.execute(
             text("""
@@ -89,10 +76,10 @@ async def get_model_description(
         ).fetchone()
 
         if not result or not result[0]:
-            raise HTTPException(404, "Описание не найдено")
+            return None
 
         zip_data = io.BytesIO(result[0])
-        
+        description = None
         
         with zipfile.ZipFile(zip_data, "r") as zip_file:
             for filename in zip_file.namelist():
@@ -117,12 +104,31 @@ async def get_model_description(
                 except Exception as e:
                     logger.error(f"Ошибка чтения файла {filename}: {str(e)}")
                     continue
-
-        return {"description": description}
+                    
+        return description
 
     except Exception as e:
         logger.error(f"Ошибка получения описания: {str(e)}")
-        raise HTTPException(500, "Internal server error")
+        return None
+
+@router.get(
+    "/{modelid}",
+    summary="Получение текстового описания товара",
+    response_description="Текст описания товара",
+    responses={
+        200: {"description": "Описание успешно получено"},
+        404: {"description": "Описание не найдено"},
+        500: {"description": "Ошибка сервера при получении"},
+    },
+)
+async def get_model_description(
+    modelid: str,
+    db: Session = Depends(get_db),
+):
+    description = get_model_description_sync(modelid, db)
+    if not description:
+        raise HTTPException(404, "Описание не найдено")
+    return {"description": description}
 
 @router.post(
     "/{modelid}",

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Диагностическая информация -->
+<div class="alert alert-info">
+    <p>Всего товаров: {{ inventory_data|length }}</p>
+    <p>Текущая страница: {{ current_page }}/{{ total_pages }}</p>
+</div>
+
+<form method="GET" action="/" class="mb-4">
+    <div class="input-group">
+        <input type="text" 
+               name="search" 
+               class="form-control" 
+               placeholder="Поиск по названию товара"
+               value="{{ request.query_params.get('search', '') }}">
+        <button type="submit" class="btn btn-primary">Найти</button>
+    </div>
+</form>
+
+<h2>Складские остатки</h2>
+<table class="inventory-table">
+    <thead>
+        <tr>
+            <th>Товар</th>
+            <th>Склад</th>
+            <th>Количество</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in inventory_data %}
+        <tr>
+            <td>
+                <a href="#" 
+                   hx-get="/web/modelgoods/{{ item.modelgoods.id }}/details" 
+                   hx-target="#content"
+                   hx-push-url="true">
+                    {{ item.modelgoods.name }}
+                </a>
+            </td>
+            <td>{{ item.folder.name }}</td>
+            <td>{{ item.count }} шт.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{# Pagination controls #}
+<div class="pagination-container">
+    <div class="pagination-controls">
+        <a href="?page={{ current_page - 1 }}&search={{ request.query_params.get('search', '')|urlencode }}" class="pagination-btn {% if current_page == 1 %}disabled{% endif %}">
+            &laquo; Previous
+        </a>
+        
+        {% for page_num in range([1, current_page-2]|max, [total_pages, current_page+2]|min + 1) %}
+            <a href="?page={{ page_num }}&search={{ request.query_params.get('search', '')|urlencode }}" class="page-number {% if page_num == current_page %}active{% endif %}">
+                {{ page_num }}
+            </a>
+        {% endfor %}
+        
+        <a href="?page={{ current_page + 1 }}&search={{ request.query_params.get('search', '')|urlencode }}" class="pagination-btn {% if current_page == total_pages %}disabled{% endif %}">
+            Next &raquo;
+        </a>
+    </div>
+    
+    <div class="pagination-info">
+        Page {{ current_page }} of {{ total_pages }} ({{ per_page }} items per page)
+    </div>
+</div>
+{% endblock %}

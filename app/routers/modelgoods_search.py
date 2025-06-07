@@ -5,6 +5,7 @@ from typing import List
 import logging
 from app.database import get_db
 from app.schemas.modelgoods import StorageSearchResponse
+from app.routers.modelgoods_description import get_model_description_sync
 
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/modelgoods/search", tags=["modelgoods"])
@@ -84,21 +85,30 @@ def search_models(
         logger.info("Выполняем SQL-запрос:\n%s\nПараметры: %s", sql, params)
         result = db.execute(sql, params).fetchall()
         
-        return [{
-            "id": row.id,
-            "name": row.name,
-            "typeid": row.typeid,
-            "firmaid": row.firmaid,
-            "userid": row.userid,
-            "count": str(row.count_info),
-            "image": row.image,
-            "price": int(row.price * row.kmin) if row.price else 0,
-            "barcode": row.barcode,
-            "codemodel": row.codemodel,
-            "volname": row.volname,
-            "wlink": row.wlink,
-            "cell": row.cells
-        } for row in result]
+        # Create response objects with descriptions
+        response_items = []
+        for row in result:
+            # Get description for this model
+            description = get_model_description_sync(row.id, db)
+            
+            response_items.append({
+                "id": row.id,
+                "name": row.name,
+                "typeid": row.typeid,
+                "firmaid": row.firmaid,
+                "userid": row.userid,
+                "count": str(row.count_info),
+                "image": row.image,
+                "price": int(row.price * row.kmin) if row.price else 0,
+                "barcode": row.barcode,
+                "codemodel": row.codemodel,
+                "volname": row.volname,
+                "wlink": row.wlink,
+                "cell": row.cells,
+                "description": description  # Add description to response
+            })
+        
+        return response_items
             
     except Exception as e:
         logger.error(f"Ошибка поиска: {str(e)}")

@@ -1,0 +1,33 @@
+<div class="container mt-4">
+    <h2>Параметры товара: {{ modelgoods.name }}</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Основные характеристики</h5>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">ID: {{ modelgoods.id }}</li>
+                <li class="list-group-item">Название: {{ modelgoods.name }}</li>
+                <li class="list-group-item">Артикул: {{ modelgoods.article }}</li>
+                <li class="list-group-item">Категория: {{ modelgoods.category }}</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Дополнительные параметры</h5>
+            <div class="row">
+               
+            </div>
+        </div>
+    </div>
+    
+    {% if description %}
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Описание товара</h5>
+            <p>{{ description }}</p>
+        </div>
+    </div>
+    {% endif %}
+</div>

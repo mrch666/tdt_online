@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Параметры товара: {{ modelgoods.name }}</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Основные характеристики</h5>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">ID: {{ modelgoods.id }}</li>
+                <li class="list-group-item">Название: {{ modelgoods.name }}</li>
+                <li class="list-group-item">Доп. название: {{ modelgoods.name2 if modelgoods.name2 else 'Нет данных' }}</li>
+                <li class="list-group-item">Размер: {{ modelgoods.size if modelgoods.size else 'Нет данных' }}</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Комментарий</h5>
+            <p>{{ description if description else 'Нет комментария' }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

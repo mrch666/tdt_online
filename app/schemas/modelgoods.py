@@ -39,6 +39,7 @@ class StorageSearchResponse(BaseModel):
     volname: Optional[str]
     wlink: Optional[str]
     cell: Optional[str]
+    description: Optional[str] = None  # New description field
 
     class Config:
         orm_mode = True

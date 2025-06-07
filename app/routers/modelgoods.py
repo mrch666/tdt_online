@@ -55,6 +55,7 @@ def read_modelgoods(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
         404: {"description": "Модель не найдена"},
     })
 def read_modelgoods(modelgoods_id: str, db: Session = Depends(get_db)):
+    logger.info(f"Searching for modelgoods with ID: '{modelgoods_id}'")
     modelgoods = db.query(Modelgoods).filter(Modelgoods.id == modelgoods_id).first()
     if not modelgoods:
         logger.warning(f"Modelgoods {modelgoods_id} not found")

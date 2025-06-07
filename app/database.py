@@ -9,7 +9,7 @@ load_dotenv()
 db_logger = logging.getLogger("database")
 db_logger.addHandler(logging.FileHandler("sql.log"))
 
-# Формируем строку подключения для Firebird
+# Connection string for Firebird
 SQLALCHEMY_DATABASE_URL = (
     f"firebird+fdb://"
     f"{os.getenv('FIREBIRD_USER', 'SYSDBA')}:{os.getenv('FIREBIRD_PASSWORD', 'masterkey')}@"
@@ -17,29 +17,25 @@ SQLALCHEMY_DATABASE_URL = (
     f"{os.getenv('BASE_DIR')}/{os.getenv('DATABASE_NAME')}"
 )
 
-# Создаем движок с явным указанием пути к клиентской библиотеке
-logging.info(str(os.path.join(os.getenv('BASE_DIR'), "fbclient.dll")))
-print(str(os.path.join(os.getenv('BASE_DIR'), "fbclient.dll")))
-print(SQLALCHEMY_DATABASE_URL)
+# Create synchronous engine
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={
-        "fb_library_name": os.path.join(os.getenv('BASE_DIR'), "fbclient.dll")
-    },
-    echo=True
+        "fb_library_name": os.path.join(os.getenv('BASE_DIR'), "fbclient.dll"),
+        "charset": "WIN1251"
+    }
 )
 
-# Настраиваем фабрику сессий
+# Configure session factory
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
 )
 
-# Базовый класс для моделей
 Base = declarative_base()
 
-# Зависимость для получения сессии БД
+# Synchronous database dependency
 def get_db():
     db = SessionLocal()
     try:
