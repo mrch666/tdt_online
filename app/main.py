@@ -5,13 +5,20 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 # Configure logger
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("api")
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
 from sqlalchemy.orm import joinedload
 from app.database import SessionLocal
 from sqlalchemy import cast, String, text, bindparam, select, func
 from app.database import get_db
 from app.models import Storage, Modelgoods,Folders
-from app.routers import users, modelgoods_description, products, modelgoods_search
+from app.routers import users, modelgoods_description, products, modelgoods_search, modelgoods_parameters
 import os
 
 app = FastAPI()
@@ -27,6 +34,7 @@ app.include_router(users.router, prefix="/api")
 app.include_router(modelgoods_description.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
 app.include_router(modelgoods_search.router, prefix="/api")
+app.include_router(modelgoods_parameters.router, prefix="/api")
 
 @app.get("/")
 def read_root(
