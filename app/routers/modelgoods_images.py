@@ -42,15 +42,54 @@ async def upload_model_image(
 
         try:
             file_data = await file.read()
-            db.execute(
-                text("SELECT * FROM \"wp_SaveBlobToFile\"(:path, :filename, :data)"),
-                {
-                    "path": img_path,
-                    "filename": filename,
-                    "data": file_data
-                }
-            )
-            db.commit()
+            
+            # Пробуем вызвать хранимую процедуру с позиционными параметрами
+            # Тестирование показало, что процедура ожидает 3 параметра в определенном порядке
+            # и работает только с позиционными параметрами (?), а не с именованными
+            try:
+                # Важно: путь должен заканчиваться на \ для правильной конкатенации в процедуре
+                if not img_path.endswith('\\'):
+                    img_path = img_path + '\\'
+                
+                # Вызываем процедуру с позиционными параметрами
+                result = db.execute(
+                    text("SELECT * FROM \"wp_SaveBlobToFile\"(?, ?, ?)"),
+                    [img_path, filename, file_data]
+                )
+                db.commit()
+                
+                # Проверяем результат
+                proc_result = result.fetchone()
+                if proc_result and len(proc_result) > 0:
+                    # Первое поле в результате - это код результата (1 = успех)
+                    success = proc_result[0]
+                    if success == 1:
+                        logger.info(f"File saved via stored procedure: {filename}, result: {success}")
+                    else:
+                        logger.warning(f"Stored procedure returned error code: {success}")
+                        # Не прерываем выполнение, т.к. есть fallback
+                        raise Exception(f"Procedure returned error code: {success}")
+                else:
+                    logger.warning("Stored procedure returned no result")
+                    raise Exception("No result from procedure")
+                    
+            except Exception as proc_error:
+                # Если процедура не работает, сохраняем файл напрямую через файловую систему
+                db.rollback()
+                logger.warning(f"Stored procedure failed: {proc_error}. Saving file directly...")
+                
+                # Создаем полный путь к файлу
+                full_path = os.path.join(img_path.rstrip('\\'), filename)
+                
+                # Создаем директорию, если она не существует
+                os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                
+                # Сохраняем файл
+                with open(full_path, 'wb') as f:
+                    f.write(file_data)
+                
+                logger.info(f"File saved directly: {full_path}")
+                
         except Exception as e:
             db.rollback()
             logger.error(f"File save error: {str(e)}")
@@ -146,20 +185,32 @@ async def delete_model_image(
 
         # Удаляем файл через хранимую процедуру
         try:
-            db.execute(
-                text("SELECT * FROM \"wp_DeleteFile\"(:path, :filename)"),
-                {
-                    "path": img_path,
-                    "filename": filename
-                }
+            # Важно: путь должен заканчиваться на \ для правильной конкатенации в процедуре
+            if not img_path.endswith('\\'):
+                img_path = img_path + '\\'
+            
+            # Для процедуры wp_DeleteFile нужно 2 позиционных параметра
+            result = db.execute(
+                text("SELECT * FROM \"wp_DeleteFile\"(?, ?)"),
+                [img_path, filename]
             )
             db.commit()
+            
+            # Проверяем результат
+            proc_result = result.fetchone()
+            if proc_result and len(proc_result) > 0:
+                success = proc_result[0]
+                if success == 1:
+                    logger.info(f"File deleted via stored procedure: {filename}, result: {success}")
+                else:
+                    logger.warning(f"Delete procedure returned error code: {success}")
+                    # Не прерываем выполнение, просто логируем
         except Exception as e:
             db.rollback()
             logger.error(f"File delete error: {str(e)}")
             # Если не удалось удалить файл, все равно обновляем запись
             db.execute(
-                text("""
+                text(""" 
                     UPDATE "modelgoods" 
                     SET "imgext" = NULL, 
                         "changedate" = CURRENT_TIMESTAMP 
