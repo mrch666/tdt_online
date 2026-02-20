@@ -25,6 +25,32 @@ async def upload_model_image(
     try:
         imgext = file.filename.split('.')[-1].split('?')[0]
 
+        # Сначала проверяем существование товара
+        result = db.execute(
+            text("""
+                SELECT FIRST 1 "id"
+                FROM "modelgoods"
+                WHERE "id" = :modelid
+            """),
+            {"modelid": modelid}
+        ).fetchone()
+
+        if not result:
+            raise HTTPException(404, "Model not found")
+
+        # Обновляем поле imgext в БД ДО сохранения файла
+        db.execute(
+            text("""
+                UPDATE "modelgoods"
+                SET "imgext" = :imgext,
+                    "changedate" = CURRENT_TIMESTAMP
+                WHERE "id" = :modelid
+            """),
+            {"imgext": imgext, "modelid": modelid}
+        )
+        db.commit()
+
+        # Теперь получаем правильное имя файла с расширением
         result = db.execute(
             text("""
                 SELECT FIRST 1
@@ -35,10 +61,7 @@ async def upload_model_image(
             {"modelid": modelid}
         ).fetchone()
 
-        if not result or not result[0]:
-            raise HTTPException(404, "Model not found")
-
-        filename = result[0].split('?')[0]
+        filename = result[0].split('?')[0] if result and result[0] else f"{modelid}.{imgext}"
         img_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('IMG_SUBDIR')) + os.sep
 
         try:
@@ -60,17 +83,6 @@ async def upload_model_image(
             raise HTTPException(500, f"File save failed: {str(e)}")
         finally:
             await file.close()
-
-        db.execute(
-            text("""
-                UPDATE "modelgoods"
-                SET "imgext" = :imgext,
-                    "changedate" = CURRENT_TIMESTAMP
-                WHERE "id" = :modelid
-            """),
-            {"imgext": imgext, "modelid": modelid}
-        )
-        db.commit()
 
         return ImageUploadResponse(status="success", filename=filename)
 
