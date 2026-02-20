@@ -5,6 +5,8 @@ from typing import List
 import logging
 import json
 import os
+from functools import lru_cache
+from datetime import datetime, timedelta
 
 from app.schemas.products import ProductResponse
 from app.database import get_db
@@ -12,12 +14,51 @@ from app.database import get_db
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/products", tags=["products"])
 
+# Простое кэширование для снижения нагрузки на базу данных
+class SimpleCache:
+    def __init__(self, ttl_seconds=60):
+        self.cache = {}
+        self.ttl = ttl_seconds
+    
+    def get(self, key):
+        if key in self.cache:
+            value, timestamp = self.cache[key]
+            if datetime.now() - timestamp < timedelta(seconds=self.ttl):
+                return value
+            else:
+                del self.cache[key]
+        return None
+    
+    def set(self, key, value):
+        self.cache[key] = (value, datetime.now())
+    
+    def clear(self):
+        self.cache.clear()
+
+# Глобальный кэш для продуктов
+products_cache = SimpleCache(ttl_seconds=30)  # 30 секунд TTL
+
+# LRU кэш для часто запрашиваемых данных
+@lru_cache(maxsize=128)
+def get_cached_products(noimage: bool, cache_key: str):
+    """Кэшированная версия получения продуктов (пустая функция, реальная логика в основном методе)"""
+    return None
+
 
 @router.get("/", response_model=List[ProductResponse])
 def get_products(
     db: Session = Depends(get_db),
     noimage: bool = False  # необязательный параметр, по умолчанию False
 ):
+    # Генерируем ключ кэша на основе параметров
+    cache_key = f"products_{noimage}"
+    
+    # Пробуем получить данные из кэша
+    cached_result = products_cache.get(cache_key)
+    if cached_result is not None:
+        logger.info(f"Используем кэшированные данные для noimage={noimage}")
+        return cached_result
+    
     desc_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('DESC_SUBDIR'))
     logger.info(f"desc_path: {str(desc_path)}")
     logger.info(f"Параметр noimage: {noimage}")
@@ -95,8 +136,15 @@ def get_products(
             logger.debug(f"Первые 3 записи результата: {raw_data[:3]}")
         else:
             logger.warning("Результат запроса пустой")
-
-        return [ProductResponse(**item) for item in raw_data]
+        
+        # Преобразуем в объекты ProductResponse
+        response_data = [ProductResponse(**item) for item in raw_data]
+        
+        # Сохраняем в кэш
+        products_cache.set(cache_key, response_data)
+        logger.info(f"Данные сохранены в кэш для ключа: {cache_key}")
+        
+        return response_data
     except Exception as e:
         logger.error(f"Products error: {str(e)}", exc_info=True)
         raise HTTPException(500, detail=str(e))
