@@ -19,7 +19,8 @@ def get_products(
     noimage: bool = False  # необязательный параметр, по умолчанию False
 ):
     desc_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('DESC_SUBDIR'))
-    logging.info(f"desc_path: {str(desc_path)}")
+    logger.info(f"desc_path: {str(desc_path)}")
+    logger.info(f"Параметр noimage: {noimage}")
     
     try:
         # Базовый запрос без WHERE условия для FBFILEEXISTS
@@ -61,6 +62,8 @@ def get_products(
             ORDER BY MAX(mg."changedate") DESC
         """
         
+        logger.debug(f"SQL запрос:\n{base_query}")
+        
         query = text(base_query)
         
         # Параметры запроса
@@ -68,10 +71,14 @@ def get_products(
         if not noimage:
             query_params["path"] = desc_path
         
+        logger.debug(f"Параметры запроса: {query_params}")
+        
         db_result = db.execute(query, query_params)
         result = list(db_result)
         db_result.close()
 
+        logger.info(f"Найдено строк в результате: {len(result)}")
+        
         raw_data = []
         for row in result:
             row_dict = {}
@@ -83,8 +90,13 @@ def get_products(
                 else:
                     row_dict[key] = str(value).strip()
             raw_data.append(row_dict)
+        
+        if raw_data:
+            logger.debug(f"Первые 3 записи результата: {raw_data[:3]}")
+        else:
+            logger.warning("Результат запроса пустой")
 
         return [ProductResponse(**item) for item in raw_data]
     except Exception as e:
-        logger.error(f"Products error: {str(e)}")
+        logger.error(f"Products error: {str(e)}", exc_info=True)
         raise HTTPException(500, detail=str(e))
