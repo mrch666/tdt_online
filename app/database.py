@@ -17,13 +17,18 @@ SQLALCHEMY_DATABASE_URL = (
     f"{os.getenv('BASE_DIR')}/{os.getenv('DATABASE_NAME')}"
 )
 
-# Create synchronous engine
+# Create synchronous engine with optimized connection pool
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={
         "fb_library_name": os.path.join(os.getenv('BASE_DIR'), "fbclient.dll"),
         "charset": "WIN1251"
-    }
+    },
+    pool_size=20,           # Увеличить размер пула с 5 до 20
+    max_overflow=30,        # Увеличить максимальное переполнение с 10 до 30
+    pool_timeout=30,        # Таймаут соединения 30 секунд
+    pool_recycle=3600,      # Пересоздавать соединения каждый час
+    echo_pool=False,        # Логировать операции с пулом (False в продакшене)
 )
 
 # Configure session factory
