@@ -104,6 +104,14 @@ def test_image_upload():
             else:
                 print(f"   ОШИБКА: Процедура вернула {proc_result}")
                 return False
+            
+            # Обновляем запись в БД (как в реальном API)
+            # Для engine.connect() не нужен commit, изменения автоматически коммитятся
+            conn.execute(
+                'UPDATE "modelgoods" SET "imgext" = ?, "changedate" = CURRENT_TIMESTAMP WHERE "id" = ?',
+                ["jpg", modelid]
+            )
+            print("   ЗАПИСЬ В БД ОБНОВЛЕНА: imgext='jpg', changedate=CURRENT_TIMESTAMP")
                 
     except Exception as e:
         print(f"   ОШИБКА при сохранении изображения: {e}")
@@ -164,6 +172,18 @@ def test_image_upload():
                     print("   ИМЯ ФАЙЛА СОВПАДАЕТ!")
                 else:
                     print(f"   ИМЯ ФАЙЛА НЕ СОВПАДАЕТ: БД={result[1]}, ожидалось={filename}")
+                
+                # Проверяем, что поле imgext обновлено
+                if result[2] == "jpg":
+                    print("   РАСШИРЕНИЕ ОБНОВЛЕНО В БД: jpg")
+                else:
+                    print(f"   ОШИБКА: Расширение не обновлено в БД: {result[2]}")
+                    
+                # Проверяем, что changedate обновлен (должен быть свежим)
+                if result[3]:
+                    print(f"   ДАТА ИЗМЕНЕНИЯ ОБНОВЛЕНА: {result[3]}")
+                else:
+                    print("   ОШИБКА: Дата изменения не обновлена")
             else:
                 print("   ОШИБКА: Не удалось получить информацию из БД")
                 
