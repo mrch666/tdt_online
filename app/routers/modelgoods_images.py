@@ -74,19 +74,44 @@ async def upload_model_image(
         try:
             file_data = await file.read()
             
+            # Подробное логирование параметров
+            logger.debug(f"Stored procedure parameters:")
+            logger.debug(f"  - img_path: {img_path} (type: {type(img_path)})")
+            logger.debug(f"  - filename: {filename} (type: {type(filename)})")
+            logger.debug(f"  - file_data length: {len(file_data)} bytes (type: {type(file_data)})")
+            logger.debug(f"  - file_data first 100 bytes: {file_data[:100]}")
+            
+            # Проверяем типы параметров
+            # Параметры должны быть строкой, строкой и байтами
+            param1 = str(img_path)  # Убедимся, что это строка
+            param2 = str(filename)  # Убедимся, что это строка
+            param3 = bytes(file_data)  # Убедимся, что это байты
+            
+            logger.debug(f"Converted parameters:")
+            logger.debug(f"  - param1 (img_path): {param1} (type: {type(param1)})")
+            logger.debug(f"  - param2 (filename): {param2} (type: {type(param2)})")
+            logger.debug(f"  - param3 (file_data): <binary data {len(param3)} bytes> (type: {type(param3)})")
+            
             # Используем позиционные параметры (?, ?, ?) - передаем как кортеж параметров
-            # SQLAlchemy ожидает список кортежей или словарей для параметров
+            # Тестирование показало, что позиционные параметры работают
+            logger.debug(f"Executing stored procedure: SELECT * FROM \"wp_SaveBlobToFile\"(?, ?, ?)")
+            logger.debug(f"With parameters: ({param1}, {param2}, <binary data {len(param3)} bytes>)")
+            
+            # Выполняем хранимую процедуру с позиционными параметрами
             db.execute(
                 text("SELECT * FROM \"wp_SaveBlobToFile\"(?, ?, ?)"),
-                (img_path, filename, file_data)
+                (param1, param2, param3)
             )
             db.commit()
-            
             logger.info(f"Image saved via stored procedure: {filename}")
                 
         except Exception as e:
             db.rollback()
             logger.error(f"Stored procedure error: {str(e)}")
+            logger.error(f"Error type: {type(e)}")
+            logger.error(f"Error details: {e.__dict__ if hasattr(e, '__dict__') else 'No details'}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             raise HTTPException(500, f"File save failed: {str(e)}")
         finally:
             await file.close()
