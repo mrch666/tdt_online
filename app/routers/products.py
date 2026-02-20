@@ -12,12 +12,18 @@ from app.database import get_db
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/products", tags=["products"])
 
+
 @router.get("/", response_model=List[ProductResponse])
-def get_products(db: Session = Depends(get_db)):
+def get_products(
+    db: Session = Depends(get_db),
+    noimage: bool = False  # необязательный параметр, по умолчанию False
+):
     desc_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('DESC_SUBDIR'))
-    logging.info(f"desc_path: {str(desc_path)}" )
+    logging.info(f"desc_path: {str(desc_path)}")
+    
     try:
-        query = text("""
+        # Базовый запрос без WHERE условия для FBFILEEXISTS
+        base_query = """
             SELECT FIRST 100
                 mg."id" AS "modelid",
                 mg."name",
@@ -36,17 +42,33 @@ def get_products(db: Session = Depends(get_db)):
             JOIN "vol" vl ON (vl."id" = v."vol1id")
             JOIN "storage" s ON (s."modelid" = mg."id" AND s."count" > 0.0 AND s."count" IS NOT NULL)
             JOIN "folders" f ON (s."folderid" = f."id" AND f."istrailer" = '0')
-            WHERE FBFILEEXISTS(:path || '/' ||dec64i0(mg."id") || '_' || dec64i1(mg."id") || '.dat')=0
+        """
+        
+        # Добавляем WHERE условие только если noimage=False
+        if not noimage:
+            base_query += """
+                WHERE FBFILEEXISTS(:path || '/' || dec64i0(mg."id") || '_' || dec64i1(mg."id") || '.dat') = 0
+            """
+        if noimage:
+            base_query+="""
+               WHERE  mg."imgext"='' 
+            """
+        # Добавляем GROUP BY и ORDER BY
+        base_query += """
             GROUP BY mg."id", mg."name", 
                 (dec64i0(mg."id") || '_' || dec64i1(mg."id") || '.' || mg."imgext"),
                 v."barcode", v."codemodel", v."kmin", vl."name", mg."wlink"
             ORDER BY MAX(mg."changedate") DESC
-        """)
-        db_result = db.execute(query,
-        {
-            "path": desc_path
-            
-        })
+        """
+        
+        query = text(base_query)
+        
+        # Параметры запроса
+        query_params = {}
+        if not noimage:
+            query_params["path"] = desc_path
+        
+        db_result = db.execute(query, query_params)
         result = list(db_result)
         db_result.close()
 

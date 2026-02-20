@@ -1,6 +1,6 @@
-from sqlalchemy import BigInteger, Column, Computed, Date, DateTime, Float, Index, Integer, LargeBinary, SmallInteger, String, Table, Text, text, ForeignKey
+from sqlalchemy import BigInteger, Column, Computed, Date, DateTime, Float, Index, Integer, LargeBinary, SmallInteger, String, Table, Text, text, ForeignKey,Boolean
 from sqlalchemy.orm import declarative_base # from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship,backref
 
 
 Base = declarative_base()
@@ -820,6 +820,42 @@ t_opllink = Table('opllink', metadata, Column('id', Text(12), quote=True,
     Index('IDoc2_opllink', 'doc2id', 'doc1id'))
 
 
+class OzonCategory(Base):
+    __tablename__ = 'ozon_categories'
+    __table_args__ = (
+        Index('idx_ozon_categories_name', "name"),
+        Index('idx_ozon_categories_parent', "parent_id"),
+        Index('idx_ozon_categories_leaf', "is_leaf"),
+        Index('idx_ozon_categories_path', "full_path"),
+        {'quote': True}  # Важно для Firebird
+    )
+    
+    # Основные колонки
+    id = Column(Integer, primary_key=True, autoincrement=True, quote=True, name='id')
+    name = Column(String(500), nullable=False, quote=True, name='name')
+    parent_id = Column(
+        Integer, 
+        ForeignKey('ozon_categories.id', ondelete='CASCADE'), 
+        quote=True, 
+        name='parent_id'
+    )
+    is_leaf = Column(Boolean, default=False, nullable=False, quote=True, name='is_leaf')
+    full_path = Column(String(2000), quote=True, name='full_path')
+   
+    
+    # Связи
+    children = relationship(
+        "OzonCategory",
+        backref=backref('parent', remote_side=[id]),
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+       
+    def __repr__(self):
+        return f"<OzonCategory(id={self.id}, name='{self.name}', path='{self.full_path}')>"
+
+
+
 class Oplplan(Base):
     __tablename__ = 'oplplan'
     __table_args__ = Index('I_oplplan1', 'docid', 'dateopl'), {'quote': True}
@@ -1462,5 +1498,3 @@ class Zatratdict(Base):
     name = Column(Text(100), quote=True, name='name')
     userid = Column(Text(12), server_default=text("'0'"))
     changedate = Column(DateTime, quote=True, name='changedate')
-
-

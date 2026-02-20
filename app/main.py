@@ -18,7 +18,7 @@ from app.database import SessionLocal
 from sqlalchemy import cast, String, text, bindparam, select, func
 from app.database import get_db
 from app.models import Storage, Modelgoods,Folders
-from app.routers import users, modelgoods_description, products, modelgoods_search, modelgoods_parameters
+from app.routers import users, modelgoods_description, products, modelgoods_search, modelgoods_parameters, ozon_categories, modelgoods_images
 import os
 
 app = FastAPI()
@@ -35,6 +35,8 @@ app.include_router(modelgoods_description.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
 app.include_router(modelgoods_search.router, prefix="/api")
 app.include_router(modelgoods_parameters.router, prefix="/api")
+app.include_router(ozon_categories.router, prefix="/api")
+app.include_router(modelgoods_images.router, prefix="/api")
 
 @app.get("/")
 def read_root(

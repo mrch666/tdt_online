@@ -187,8 +187,8 @@ async def upload_model_parameters(
     })
 async def get_parameters(
     modelid: str,
-    db: Session = Depends(get_db),
-    format: str = Query('xml', description="Формат возвращаемых данных: xml или json")
+    format: str = Query('xml', description="Формат возвращаемых данных: xml или json"),
+    db: Session = Depends(get_db)
 ):
     try:
         logger.info(f"Запрос параметров для modelid: {modelid}")

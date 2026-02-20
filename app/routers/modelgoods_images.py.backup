@@ -4,6 +4,8 @@ from sqlalchemy import text
 import logging
 import os
 import json
+import tempfile
+import zipfile
 from typing import Optional
 
 from app.database import get_db
@@ -11,6 +13,15 @@ from app.schemas.modelgoods_images import ImageUploadResponse, ImageInfo, ImageD
 
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/modelgoods/image", tags=["modelgoods_images"])
+
+# Helper functions to decode model IDs (same as in modelgoods_parameters.py)
+def dec64i0(modelid: str) -> str:
+    """Decode first part of model ID"""
+    return modelid[:8]
+
+def dec64i1(modelid: str) -> str:
+    """Decode second part of model ID"""
+    return modelid[8:16]
 
 @router.post("/", response_model=ImageUploadResponse)
 async def upload_model_image(
@@ -21,43 +32,56 @@ async def upload_model_image(
     """
     Загрузка изображения для товара
     """
+    tmp_path = None
     try:
+        # Получаем расширение файла
         imgext = file.filename.split('.')[-1].split('?')[0]
         
-        result = db.execute(
-            text("""
-                SELECT FIRST 1 
-                    DEC64I0(MG."id") || '_' || DEC64I1(MG."id") || '.' || MG."imgext" 
-                FROM "modelgoods" MG 
-                WHERE MG."id" = :modelid
-            """),
-            {"modelid": modelid}
-        ).fetchone()
+        # Формируем имя файла: dec64i0(modelid)_dec64i1(modelid).imgext
+        # Нужны функции dec64i0 и dec64i1
+        def dec64i0(modelid: str) -> str:
+            return modelid[:8]
         
-        if not result or not result[0]:
-            raise HTTPException(404, "Model not found")
+        def dec64i1(modelid: str) -> str:
+            return modelid[8:16]
             
-        filename = result[0].split('?')[0]
-        img_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('IMG_SUBDIR'))
+        filename = f"{dec64i0(modelid)}_{dec64i1(modelid)}.{imgext}"
+        img_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('IMG_SUBDIR')) + os.sep
+        
+        logger.info(f"Сохраняем файл: путь={img_path}, имя={filename}, расширение={imgext}")
+
+        # Создаем временный файл
+        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as tmp_file:
+            file_data = await file.read()
+            tmp_file.write(file_data)
+            tmp_path = tmp_file.name
+        
+        logger.info(f"Создан временный файл: {tmp_path}, размер: {len(file_data)} байт")
 
         try:
-            file_data = await file.read()
-            db.execute(
-                text("SELECT * FROM \"wp_SaveBlobToFile\"(:path, :filename, :data)"),
-                {
-                    "path": img_path,
-                    "filename": filename,
-                    "data": file_data
-                }
-            )
+            # Передаем временный файл в хранимую процедуру
+            sql = text("""SELECT * FROM "wp_SaveBlobToFile"(:dir, :filename, :image_data)""")
+            logger.debug(f"Выполняемый SQL: {sql}")
+            
+            with open(tmp_path, 'rb') as f:
+                image_blob = f.read()
+            
+                db.execute(sql, {
+                    'dir': img_path,
+                    'filename': filename,
+                    "image_data": image_blob
+                }).fetchall()
             db.commit()
+            logger.info(f"Файл успешно сохранен через хранимую процедуру")
+            
         except Exception as e:
             db.rollback()
-            logger.error(f"File save error: {str(e)}")
-            raise HTTPException(500, "File save failed")
+            logger.error(f"File save error: {str(e)}", exc_info=True)
+            raise HTTPException(500, f"File save failed: {str(e)}")
         finally:
             await file.close()
 
+        # Обновляем запись в БД
         db.execute(
             text("""
                 UPDATE "modelgoods" 
@@ -68,12 +92,21 @@ async def upload_model_image(
             {"imgext": imgext, "modelid": modelid}
         )
         db.commit()
+        logger.info(f"Обновлена запись в БД для modelid={modelid}")
 
         return ImageUploadResponse(status="success", filename=filename)
         
     except Exception as e:
-        logger.error(f"Image upload error: {str(e)}")
+        logger.error(f"Image upload error: {str(e)}", exc_info=True)
         raise HTTPException(500, "Internal server error")
+    finally:
+        # Удаляем временный файл
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+                logger.debug(f"Удален временный файл: {tmp_path}")
+            except Exception as e:
+                logger.warning(f"Не удалось удалить временный файл {tmp_path}: {str(e)}")
 
 
 @router.get("/{modelid}", response_model=ImageInfo)
@@ -143,27 +176,49 @@ async def delete_model_image(
             
         filename = result[0]
         img_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('IMG_SUBDIR'))
-
-        # Удаляем файл через хранимую процедуру
-        try:
+        full_path = os.path.join(img_path, filename)
+        
+        # Проверяем существование файла
+        if not os.path.exists(full_path):
+            # Если файла нет, просто обновляем запись в БД
             db.execute(
-                text("SELECT * FROM \"wp_DeleteFile\"(:path, :filename)"),
+                text("""
+                    UPDATE modelgoods 
+                    SET imgext = NULL, 
+                        changedate = CURRENT_TIMESTAMP 
+                    WHERE id = :modelid
+                """),
+                {"modelid": modelid}
+            )
+            db.commit()
+            return ImageDeleteResponse(
+                status="success", 
+                message="Image record cleared (file was not found)"
+            )
+        
+        # Удаляем файл через хранимую процедуру - путь как строка в SQL
+        try:
+            sql = f"""SELECT * FROM \"wp_DeleteFile\"('{img_path}', :filename)"""
+            logger.debug(f"SQL запрос для удаления: {sql}")
+            
+            db.execute(
+                text(sql),
                 {
-                    "path": img_path,
                     "filename": filename
                 }
             )
             db.commit()
+            logger.info(f"Файл успешно удален через хранимую процедуру: {filename}")
         except Exception as e:
             db.rollback()
             logger.error(f"File delete error: {str(e)}")
             # Если не удалось удалить файл, все равно обновляем запись
             db.execute(
                 text("""
-                    UPDATE "modelgoods" 
-                    SET "imgext" = NULL, 
-                        "changedate" = CURRENT_TIMESTAMP 
-                    WHERE "id" = :modelid
+                    UPDATE modelgoods 
+                    SET imgext = NULL, 
+                        changedate = CURRENT_TIMESTAMP 
+                    WHERE id = :modelid
                 """),
                 {"modelid": modelid}
             )
@@ -176,10 +231,10 @@ async def delete_model_image(
         # Обновляем запись в БД
         db.execute(
             text("""
-                UPDATE "modelgoods" 
-                SET "imgext" = NULL, 
-                    "changedate" = CURRENT_TIMESTAMP 
-                WHERE "id" = :modelid
+                UPDATE modelgoods 
+                SET imgext = NULL, 
+                    changedate = CURRENT_TIMESTAMP 
+                WHERE id = :modelid
             """),
             {"modelid": modelid}
         )
