@@ -97,8 +97,6 @@ def test_image_upload():
                 [img_path, filename, image_data]
             )
             
-            conn.commit()
-            
             # Проверяем результат
             proc_result = result.fetchone()
             if proc_result and proc_result[0] == 1:
@@ -178,7 +176,6 @@ def test_image_upload():
         with engine.connect() as conn:
             sql = f'SELECT * FROM "wp_DeleteFile"(\'{img_path}\', \'{filename}\')'
             result = conn.execute(sql)
-            conn.commit()
             
             proc_result = result.fetchone()
             if proc_result and proc_result[0] == 1:
@@ -209,8 +206,8 @@ if __name__ == "__main__":
     
     success = test_image_upload()
     if success:
-        print("\n✅ ВСЕ ТЕСТЫ ПРОЙДЕНЫ УСПЕШНО!")
+        print("\n[УСПЕХ] ВСЕ ТЕСТЫ ПРОЙДЕНЫ УСПЕШНО!")
         sys.exit(0)
     else:
-        print("\n❌ ТЕСТЫ ЗАВЕРШИЛИСЬ С ОШИБКАМИ")
+        print("\n[ОШИБКА] ТЕСТЫ ЗАВЕРШИЛИСЬ С ОШИБКАМИ")
         sys.exit(1)
