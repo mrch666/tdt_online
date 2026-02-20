@@ -38,40 +38,47 @@ async def upload_model_image(
         if not result:
             raise HTTPException(404, "Model not found")
 
-        # Обновляем поле imgext в БД ДО сохранения файла
-        db.execute(
+        # Получаем текущее значение imgext (может быть NULL или пустое)
+        current_result = db.execute(
             text("""
-                UPDATE "modelgoods"
-                SET "imgext" = :imgext,
-                    "changedate" = CURRENT_TIMESTAMP
+                SELECT FIRST 1 "imgext"
+                FROM "modelgoods"
                 WHERE "id" = :modelid
             """),
-            {"imgext": imgext, "modelid": modelid}
-        )
-        db.commit()
+            {"modelid": modelid}
+        ).fetchone()
+        
+        current_imgext = current_result[0] if current_result and current_result[0] else None
 
-        # Теперь получаем правильное имя файла с расширением
-        result = db.execute(
+        # Формируем имя файла с новым расширением (временно)
+        # Получаем числовые части ID
+        id_parts_result = db.execute(
             text("""
                 SELECT FIRST 1
-                    DEC64I0(MG."id") || '_' || DEC64I1(MG."id") || '.' || MG."imgext"
+                    DEC64I0(MG."id"),
+                    DEC64I1(MG."id")
                 FROM "modelgoods" MG
                 WHERE MG."id" = :modelid
             """),
             {"modelid": modelid}
         ).fetchone()
 
-        filename = result[0].split('?')[0] if result and result[0] else f"{modelid}.{imgext}"
+        if not id_parts_result:
+            raise HTTPException(500, "Cannot get ID parts for filename generation")
+
+        part0 = id_parts_result[0]
+        part1 = id_parts_result[1]
+        filename = f"{part0}_{part1}.{imgext}"
         img_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('IMG_SUBDIR')) + os.sep
 
         try:
             file_data = await file.read()
             
-            # Используем позиционные параметры (?, ?, ?) - это работает!
-            # Именованные параметры (:path, :filename, :data) не работают
+            # Используем позиционные параметры (?, ?, ?) - передаем как кортеж параметров
+            # SQLAlchemy ожидает список кортежей или словарей для параметров
             db.execute(
                 text("SELECT * FROM \"wp_SaveBlobToFile\"(?, ?, ?)"),
-                [img_path, filename, file_data]
+                (img_path, filename, file_data)
             )
             db.commit()
             
@@ -83,6 +90,18 @@ async def upload_model_image(
             raise HTTPException(500, f"File save failed: {str(e)}")
         finally:
             await file.close()
+
+        # Только после успешного сохранения файла обновляем БД
+        db.execute(
+            text("""
+                UPDATE "modelgoods"
+                SET "imgext" = :imgext,
+                    "changedate" = CURRENT_TIMESTAMP
+                WHERE "id" = :modelid
+            """),
+            {"imgext": imgext, "modelid": modelid}
+        )
+        db.commit()
 
         return ImageUploadResponse(status="success", filename=filename)
 

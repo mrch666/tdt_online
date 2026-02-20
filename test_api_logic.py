@@ -49,25 +49,30 @@ def test_api_logic():
     imgext = test_filename.split('.')[-1].split('?')[0]
     print(f"      Расширение: {imgext}")
     
-    print(f"   b) Обновляем поле imgext в БД ДО сохранения файла")
+    print(f"   b) Формируем имя файла с новым расширением (временно)")
     try:
         with engine.connect() as conn:
-            # Обновляем imgext (как в новом API)
-            conn.execute(
-                'UPDATE "modelgoods" SET "imgext" = ?, "changedate" = CURRENT_TIMESTAMP WHERE "id" = ?',
-                [imgext, modelid]
-            )
-            print(f"      Поле imgext обновлено в БД: '{imgext}'")
-            
-            # Получаем имя файла с расширением
-            result = conn.execute(
-                'SELECT DEC64I0("id") || \'_\' || DEC64I1("id") || \'.\' || "imgext" FROM "modelgoods" WHERE "id" = ?',
+            # Получаем текущее значение imgext
+            current_result = conn.execute(
+                'SELECT "imgext" FROM "modelgoods" WHERE "id" = ?',
                 [modelid]
             ).fetchone()
             
-            if result and result[0]:
-                filename = result[0].split('?')[0]
-                print(f"      Имя файла из БД: {filename}")
+            current_imgext = current_result[0] if current_result and current_result[0] else None
+            print(f"      Текущее расширение в БД: {current_imgext}")
+            
+            # Формируем имя файла с новым расширением (временно, как в новом API)
+            # Получаем числовые части ID
+            id_parts_result = conn.execute(
+                'SELECT DEC64I0("id"), DEC64I1("id") FROM "modelgoods" WHERE "id" = ?',
+                [modelid]
+            ).fetchone()
+            
+            if id_parts_result:
+                part0 = id_parts_result[0]
+                part1 = id_parts_result[1]
+                filename = f"{part0}_{part1}.{imgext}"
+                print(f"      Сформированное имя файла: {filename}")
                 
                 # Проверяем, что имя файла содержит расширение
                 if '.' in filename and filename.endswith(f'.{imgext}'):
@@ -78,7 +83,7 @@ def test_api_logic():
                     print(f"         Получено: {filename}")
                     return False
             else:
-                print(f"      [ERROR] Не удалось получить имя файла из БД")
+                print(f"      [ERROR] Не удалось получить части ID для формирования имени файла")
                 return False
                 
     except Exception as e:
