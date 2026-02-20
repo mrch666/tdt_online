@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, bindparam, String, LargeBinary
 import logging
 import os
 import json
@@ -98,10 +98,17 @@ async def upload_model_image(
             logger.debug(f"With parameters: ({param1}, {param2}, <binary data {len(param3)} bytes>)")
             
             # Выполняем хранимую процедуру с позиционными параметрами
-            db.execute(
-                text("SELECT * FROM \"wp_SaveBlobToFile\"(?, ?, ?)"),
-                (param1, param2, param3)
+            # Используем text() с bindparams для явного указания типов параметров
+            stmt = text("SELECT * FROM \"wp_SaveBlobToFile\"(:p1, :p2, :p3)")
+            
+            # Явно указываем типы параметров через bindparams
+            stmt = stmt.bindparams(
+                bindparam("p1", value=param1, type_=String),
+                bindparam("p2", value=param2, type_=String),
+                bindparam("p3", value=param3, type_=LargeBinary)
             )
+            
+            db.execute(stmt, {"p1": param1, "p2": param2, "p3": param3})
             db.commit()
             logger.info(f"Image saved via stored procedure: {filename}")
                 
