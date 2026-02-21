@@ -108,9 +108,25 @@ async def upload_model_image(
                 bindparam("p3", value=param3, type_=LargeBinary)
             )
             
-            db.execute(stmt, {"p1": param1, "p2": param2, "p3": param3})
+            result = db.execute(stmt, {"p1": param1, "p2": param2, "p3": param3})
             db.commit()
-            logger.info(f"Image saved via stored procedure: {filename}")
+            
+            # Получаем результат выполнения процедуры
+            proc_result = result.fetchone()
+            logger.info(f"Stored procedure result: {proc_result}")
+            
+            # Проверяем, что файл действительно создан
+            import time
+            time.sleep(0.1)  # Даем время на сохранение файла
+            
+            full_path = os.path.join(param1, param2)
+            if os.path.exists(full_path):
+                file_size = os.path.getsize(full_path)
+                logger.info(f"Image saved via stored procedure: {filename} ({file_size} bytes)")
+            else:
+                logger.warning(f"Stored procedure executed but file not found: {full_path}")
+                logger.warning(f"This may be normal if Firebird service has different file system access")
+                logger.info(f"Image saved via stored procedure (executed): {filename}")
                 
         except Exception as e:
             db.rollback()
