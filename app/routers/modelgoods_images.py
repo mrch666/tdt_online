@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import text, bindparam, String, LargeBinary
+from sqlalchemy import text
 import logging
 import os
 import json
@@ -13,6 +13,15 @@ from app.schemas.modelgoods_images import ImageUploadResponse, ImageInfo, ImageD
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/modelgoods/image", tags=["modelgoods_images"])
 
+# Helper functions to decode model IDs
+def dec64i0(modelid: str) -> str:
+    """Decode first part of model ID"""
+    return modelid[:8]
+
+def dec64i1(modelid: str) -> str:
+    """Decode second part of model ID"""
+    return modelid[8:16]
+
 @router.post("/", response_model=ImageUploadResponse)
 async def upload_model_image(
     modelid: str = Form(...),
@@ -20,7 +29,7 @@ async def upload_model_image(
     db: Session = Depends(get_db)
 ):
     """
-    Загрузка изображения для товара
+    Загрузка изображения для товара с использованием временного файла
     """
     try:
         imgext = file.filename.split('.')[-1].split('?')[0]
@@ -50,108 +59,57 @@ async def upload_model_image(
         
         current_imgext = current_result[0] if current_result and current_result[0] else None
 
-        # Формируем имя файла с новым расширением (временно)
-        # Получаем числовые части ID
-        id_parts_result = db.execute(
-            text("""
-                SELECT FIRST 1
-                    DEC64I0(MG."id"),
-                    DEC64I1(MG."id")
-                FROM "modelgoods" MG
-                WHERE MG."id" = :modelid
-            """),
-            {"modelid": modelid}
-        ).fetchone()
-
-        if not id_parts_result:
-            raise HTTPException(500, "Cannot get ID parts for filename generation")
-
-        part0 = id_parts_result[0]
-        part1 = id_parts_result[1]
-        filename = f"{part0}_{part1}.{imgext}"
+        # Формируем имя файла
+        filename = f"{dec64i0(modelid)}_{dec64i1(modelid)}.{imgext}"
         img_path = os.path.join(os.getenv('BASE_DIR'), os.getenv('IMG_SUBDIR')) + os.sep
 
         try:
+            # Читаем данные файла
             file_data = await file.read()
             
-            # Подробное логирование параметров
-            logger.debug(f"Stored procedure parameters:")
-            logger.debug(f"  - img_path: {img_path} (type: {type(img_path)})")
-            logger.debug(f"  - filename: {filename} (type: {type(filename)})")
-            logger.debug(f"  - file_data length: {len(file_data)} bytes (type: {type(file_data)})")
-            logger.debug(f"  - file_data first 100 bytes: {file_data[:100]}")
+            logger.debug(f"Загрузка изображения:")
+            logger.debug(f"  - img_path: {img_path}")
+            logger.debug(f"  - filename: {filename}")
+            logger.debug(f"  - file_data length: {len(file_data)} bytes")
             
-            # Проверяем типы параметров
-            # Параметры должны быть строкой, строкой и байтами
-            param1 = str(img_path)  # Убедимся, что это строка
-            param2 = str(filename)  # Убедимся, что это строка
-            param3 = bytes(file_data)  # Убедимся, что это байты
+            # Создаем временный файл
+            with tempfile.NamedTemporaryFile(delete=False, mode='wb') as tmp_file:
+                tmp_file.write(file_data)
+                tmp_path = tmp_file.name
             
-            logger.debug(f"Converted parameters:")
-            logger.debug(f"  - param1 (img_path): {param1} (type: {type(param1)})")
-            logger.debug(f"  - param2 (filename): {param2} (type: {type(param2)})")
-            logger.debug(f"  - param3 (file_data): <binary data {len(param3)} bytes> (type: {type(param3)})")
+            # Выполняем хранимую процедуру через временный файл
+            sql = text("""SELECT * FROM "wp_SaveBlobToFile"(:dir, dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.' || :imgext, :file_content)""")
             
-            # Используем позиционные параметры (?, ?, ?) - передаем как кортеж параметров
-            # Тестирование показало, что позиционные параметры работают
-            logger.debug(f"Executing stored procedure: SELECT * FROM \"wp_SaveBlobToFile\"(?, ?, ?)")
-            logger.debug(f"With parameters: ({param1}, {param2}, <binary data {len(param3)} bytes>)")
+            logger.debug(f"Выполняемый SQL: {sql}")
             
-            # Выполняем хранимую процедуру с позиционными параметрами
-            # Используем text() с bindparams для явного указания типов параметров
-            stmt = text("SELECT * FROM \"wp_SaveBlobToFile\"(:p1, :p2, :p3)")
+            with open(tmp_path, 'rb') as tmp_file:
+                file_blob = tmp_file.read()
             
-            # Явно указываем типы параметров через bindparams
-            stmt = stmt.bindparams(
-                bindparam("p1", value=param1, type_=String),
-                bindparam("p2", value=param2, type_=String),
-                bindparam("p3", value=param3, type_=LargeBinary)
-            )
+                db.execute(sql, {
+                    'dir': img_path,
+                    'modelid': modelid,
+                    'imgext': imgext,
+                    'file_content': file_blob
+                }).fetchall()
             
-            # Выполняем хранимую процедуру - она возвращает результат
-            result = db.execute(stmt, {"p1": param1, "p2": param2, "p3": param3})
             db.commit()
             
-            # Получаем результат выполнения процедуры
-            try:
-                proc_result = result.fetchone()
-                logger.info(f"Stored procedure result: {proc_result}")
-            except Exception as fetch_error:
-                logger.warning(f"Cannot fetch procedure result: {fetch_error}")
-                logger.info(f"Stored procedure executed (no result fetched)")
+            logger.info(f"Изображение сохранено через временный файл: {filename}")
             
-            # Проверяем, что файл действительно создан
-            # Служба Firebird может создавать файлы с задержкой
-            import time
-            full_path = os.path.join(param1, param2)
-            file_created = False
-            
-            # Пробуем несколько раз проверить создание файла
-            for attempt in range(5):
-                time.sleep(0.2)  # Даем время на сохранение файла
-                if os.path.exists(full_path):
-                    file_size = os.path.getsize(full_path)
-                    logger.info(f"Image saved via stored procedure: {filename} ({file_size} bytes)")
-                    file_created = True
-                    break
-                else:
-                    logger.debug(f"File not found yet, attempt {attempt + 1}/5: {full_path}")
-            
-            if not file_created:
-                logger.warning(f"Stored procedure executed but file not found after 5 attempts: {full_path}")
-                logger.warning(f"This may be normal if Firebird service has different file system access")
-                logger.info(f"Image saved via stored procedure (executed, file check timeout): {filename}")
-                
         except Exception as e:
             db.rollback()
-            logger.error(f"Stored procedure error: {str(e)}")
-            logger.error(f"Error type: {type(e)}")
-            logger.error(f"Error details: {e.__dict__ if hasattr(e, '__dict__') else 'No details'}")
+            logger.error(f"Ошибка сохранения изображения: {str(e)}")
+            logger.error(f"Тип ошибки: {type(e)}")
             import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            logger.error(f"Трассировка: {traceback.format_exc()}")
             raise HTTPException(500, f"File save failed: {str(e)}")
         finally:
             await file.close()
+            # Удаляем временный файл
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
 
         # Только после успешного сохранения файла обновляем БД
         db.execute(
