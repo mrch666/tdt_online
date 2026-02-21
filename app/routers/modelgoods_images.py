@@ -108,12 +108,17 @@ async def upload_model_image(
                 bindparam("p3", value=param3, type_=LargeBinary)
             )
             
+            # Выполняем хранимую процедуру - она возвращает результат
             result = db.execute(stmt, {"p1": param1, "p2": param2, "p3": param3})
             db.commit()
             
             # Получаем результат выполнения процедуры
-            proc_result = result.fetchone()
-            logger.info(f"Stored procedure result: {proc_result}")
+            try:
+                proc_result = result.fetchone()
+                logger.info(f"Stored procedure result: {proc_result}")
+            except Exception as fetch_error:
+                logger.warning(f"Cannot fetch procedure result: {fetch_error}")
+                logger.info(f"Stored procedure executed (no result fetched)")
             
             # Проверяем, что файл действительно создан
             import time
