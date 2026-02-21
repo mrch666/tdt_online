@@ -121,17 +121,26 @@ async def upload_model_image(
                 logger.info(f"Stored procedure executed (no result fetched)")
             
             # Проверяем, что файл действительно создан
+            # Служба Firebird может создавать файлы с задержкой
             import time
-            time.sleep(0.1)  # Даем время на сохранение файла
-            
             full_path = os.path.join(param1, param2)
-            if os.path.exists(full_path):
-                file_size = os.path.getsize(full_path)
-                logger.info(f"Image saved via stored procedure: {filename} ({file_size} bytes)")
-            else:
-                logger.warning(f"Stored procedure executed but file not found: {full_path}")
+            file_created = False
+            
+            # Пробуем несколько раз проверить создание файла
+            for attempt in range(5):
+                time.sleep(0.2)  # Даем время на сохранение файла
+                if os.path.exists(full_path):
+                    file_size = os.path.getsize(full_path)
+                    logger.info(f"Image saved via stored procedure: {filename} ({file_size} bytes)")
+                    file_created = True
+                    break
+                else:
+                    logger.debug(f"File not found yet, attempt {attempt + 1}/5: {full_path}")
+            
+            if not file_created:
+                logger.warning(f"Stored procedure executed but file not found after 5 attempts: {full_path}")
                 logger.warning(f"This may be normal if Firebird service has different file system access")
-                logger.info(f"Image saved via stored procedure (executed): {filename}")
+                logger.info(f"Image saved via stored procedure (executed, file check timeout): {filename}")
                 
         except Exception as e:
             db.rollback()
