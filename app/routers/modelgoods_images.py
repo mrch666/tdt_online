@@ -116,7 +116,18 @@ async def upload_model_image(
             logger.debug(f"Временный файл создан: {tmp_path}, размер: {tmp_size} байт")
             
             # Выполняем хранимую процедуру через временный файл
+            # Используем bindparam с явным указанием типа BLOB
+            from sqlalchemy import bindparam, LargeBinary, String
+            
             sql = text("""SELECT * FROM "wp_SaveBlobToFile"(:dir, dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.' || :imgext, :file_content)""")
+            
+            # Создаем bindparam с явным указанием типа LargeBinary (BLOB)
+            sql = sql.bindparams(
+                bindparam('dir', type_=String),
+                bindparam('modelid', type_=String),
+                bindparam('imgext', type_=String),
+                bindparam('file_content', type_=LargeBinary)
+            )
             
             logger.debug(f"Выполняемый SQL: {sql}")
             
@@ -125,12 +136,16 @@ async def upload_model_image(
             
             logger.debug(f"Передаваемые данные: {len(file_blob)} байт")
             
-            result = db.execute(sql, {
+            # Создаем параметры
+            params = {
                 'dir': img_path,
                 'modelid': modelid,
                 'imgext': imgext,
                 'file_content': file_blob
-            }).fetchall()
+            }
+            
+            # Выполняем запрос с явным указанием типа для BLOB
+            result = db.execute(sql, params).fetchall()
             
             db.commit()
             
