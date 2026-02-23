@@ -55,7 +55,8 @@ def run_specific_tests():
         "tests/test_main.py",
         "tests/test_modelgoods_parameters.py",
         "tests/test_external_images_port_error.py",
-        "tests/test_external_images_port_fixed.py"
+        "tests/test_external_images_port_fixed.py",
+        "tests/test_external_images_identity_key_simple.py"
     ]
     
     cmd = [sys.executable, "-m", "pytest"] + test_files + ["-v", "--tb=short"]

@@ -1507,7 +1507,7 @@ class ModelgoodsExternalImages(Base):
         {'quote': True}
     )
     
-    id = Column(Text(12), primary_key=True, quote=True, name='id')
+    id = Column(Text(12), primary_key=True, server_default=text("'0'"), quote=True, name='id')
     modelid = Column(Text(12), ForeignKey('modelgoods.id'), nullable=False, server_default=text("'0'"), quote=True, name='modelid')
     url = Column(String(2000), nullable=False, quote=True, name='url')
     is_approved = Column(Integer, nullable=False, server_default=text('0'), quote=True, name='is_approved')
