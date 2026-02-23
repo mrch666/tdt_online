@@ -7,10 +7,11 @@ import tempfile
 import os
 from unittest.mock import patch, MagicMock
 from app.routers.web.pages import upload_to_main_api
+from app.config import settings
 
-def test_upload_to_main_api_correct_port():
+def test_upload_to_main_api_uses_configuration():
     """
-    Тест, который проверяет, что используется правильный порт (8000)
+    Тест, который проверяет, что используется конфигурация для получения порта
     """
     # Создаем временный файл для теста
     with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
@@ -26,22 +27,25 @@ def test_upload_to_main_api_correct_port():
             mock_response.json.return_value = {"status": "success", "filename": "test.jpg"}
             mock_post.return_value = mock_response
             
-            # Вызываем функцию
-            result = upload_to_main_api("000001001G2C", tmp_path)
-            
-            # Проверяем, что функция вернула успех
-            assert result["status"] == "success"
-            assert result["filename"] == "test.jpg"
-            
-            # Проверяем, что был вызов с правильным портом (8000)
-            mock_post.assert_called_once()
-            call_args = mock_post.call_args[0][0]
-            assert "localhost:8000" in call_args
-            assert "localhost:7990" not in call_args
-            
-            # Проверяем, что используется правильный путь (без /api префикса)
-            assert "/modelgoods/image/" in call_args
-            assert "/api/modelgoods/image/" not in call_args
+            # Мокаем settings.get_modelgoods_image_url для возврата тестового URL
+            with patch('app.routers.web.pages.settings.get_modelgoods_image_url') as mock_get_url:
+                test_url = "http://localhost:8000/modelgoods/image/"
+                mock_get_url.return_value = test_url
+                
+                # Вызываем функцию
+                result = upload_to_main_api("000001001G2C", tmp_path)
+                
+                # Проверяем, что функция вернула успех
+                assert result["status"] == "success"
+                assert result["filename"] == "test.jpg"
+                
+                # Проверяем, что был вызов с URL из конфигурации
+                mock_post.assert_called_once()
+                call_args = mock_post.call_args[0][0]
+                assert call_args == test_url
+                
+                # Проверяем, что был вызван метод получения URL из конфигурации
+                mock_get_url.assert_called_once()
     finally:
         # Удаляем временный файл
         if os.path.exists(tmp_path):

@@ -9,10 +9,9 @@ from unittest.mock import patch, MagicMock
 from app.routers.web.pages import upload_to_main_api, download_and_convert_image
 from fastapi import HTTPException
 
-def test_upload_to_main_api_correct_port_used():
+def test_upload_to_main_api_uses_configuration_from_env():
     """
-    Тест, который проверяет, что используется правильный порт (8000)
-    после исправления ошибки с портом 7990
+    Тест, который проверяет, что используется конфигурация из переменных окружения
     """
     # Создаем временный файл для теста
     with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
@@ -25,26 +24,33 @@ def test_upload_to_main_api_correct_port_used():
             # Настраиваем мок для имитации таймаута
             mock_post.side_effect = requests.exceptions.ReadTimeout("Read timed out")
             
-            # Вызываем функцию, которая должна упасть с ошибкой
-            result = upload_to_main_api("000001001G2C", tmp_path)
-            
-            # Проверяем, что функция вернула ошибку
-            assert result["status"] == "error"
-            assert "Read timed out" in result["message"]
-            
-            # Проверяем, что был вызов с правильным портом (8000)
-            mock_post.assert_called_once()
-            call_args = mock_post.call_args[0][0]
-            assert "localhost:8000" in call_args
-            assert "localhost:7990" not in call_args
+            # Мокаем settings.get_modelgoods_image_url для возврата тестового URL
+            with patch('app.routers.web.pages.settings.get_modelgoods_image_url') as mock_get_url:
+                test_url = "http://localhost:8000/modelgoods/image/"
+                mock_get_url.return_value = test_url
+                
+                # Вызываем функцию, которая должна упасть с ошибкой
+                result = upload_to_main_api("000001001G2C", tmp_path)
+                
+                # Проверяем, что функция вернула ошибку
+                assert result["status"] == "error"
+                assert "Read timed out" in result["message"]
+                
+                # Проверяем, что был вызов с URL из конфигурации
+                mock_post.assert_called_once()
+                call_args = mock_post.call_args[0][0]
+                assert call_args == test_url
+                
+                # Проверяем, что был вызван метод получения URL из конфигурации
+                mock_get_url.assert_called_once()
     finally:
         # Удаляем временный файл
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
-def test_upload_to_main_api_404_error_with_correct_port():
+def test_upload_to_main_api_404_error_with_configuration():
     """
-    Тест, который проверяет ошибку 404 при обращении к API с правильным портом (8000)
+    Тест, который проверяет ошибку 404 при обращении к API с использованием конфигурации
     """
     # Создаем временный файл для теста
     with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
@@ -60,18 +66,25 @@ def test_upload_to_main_api_404_error_with_correct_port():
             mock_response.text = "Not Found"
             mock_post.return_value = mock_response
             
-            # Вызываем функцию
-            result = upload_to_main_api("000001001G2C", tmp_path)
-            
-            # Проверяем, что функция вернула ошибку
-            assert result["status"] == "error"
-            assert "Ошибка API: 404" in result["message"]
-            
-            # Проверяем, что был вызов с правильным портом (8000)
-            mock_post.assert_called_once()
-            call_args = mock_post.call_args[0][0]
-            assert "localhost:8000" in call_args
-            assert "localhost:7990" not in call_args
+            # Мокаем settings.get_modelgoods_image_url для возврата тестового URL
+            with patch('app.routers.web.pages.settings.get_modelgoods_image_url') as mock_get_url:
+                test_url = "http://localhost:8000/modelgoods/image/"
+                mock_get_url.return_value = test_url
+                
+                # Вызываем функцию
+                result = upload_to_main_api("000001001G2C", tmp_path)
+                
+                # Проверяем, что функция вернула ошибку
+                assert result["status"] == "error"
+                assert "Ошибка API: 404" in result["message"]
+                
+                # Проверяем, что был вызов с URL из конфигурации
+                mock_post.assert_called_once()
+                call_args = mock_post.call_args[0][0]
+                assert call_args == test_url
+                
+                # Проверяем, что был вызван метод получения URL из конфигурации
+                mock_get_url.assert_called_once()
     finally:
         # Удаляем временный файл
         if os.path.exists(tmp_path):

@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import cast, String, text, bindparam, and_, or_, not_
 from app.database import get_db
 from app.models import Users, Storage, Modelgoods, Folders, ModelgoodsExternalImages
+from app.config import settings
 import logging
 import requests
 import tempfile
@@ -180,15 +181,18 @@ def upload_to_main_api(modelid: str, image_file_path: str) -> dict:
     try:
         logger.info(f"Загрузка изображения для modelid={modelid} через API")
         
+        # Получаем URL API из конфигурации
+        api_url = settings.get_modelgoods_image_url()
+        logger.info(f"Используем API URL: {api_url}")
+        
         # Открываем файл для загрузки
         with open(image_file_path, 'rb') as f:
             files = {'file': (f'{modelid}.jpg', f, 'image/jpeg')}
             data = {'modelid': modelid}
             
             # Отправляем запрос к API
-            # Используем localhost:8000 как в основном приложении
             response = requests.post(
-                'http://localhost:8000/modelgoods/image/',
+                api_url,
                 files=files,
                 data=data,
                 timeout=60
