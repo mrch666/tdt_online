@@ -32,9 +32,17 @@ async def upload_model_image(
     Загрузка изображения для товара с использованием временного файла
     """
     try:
+        # Логируем длину modelid для отладки
+        logger.debug(f"Получен modelid: '{modelid}'")
+        logger.debug(f"Длина modelid: {len(modelid)} символов")
+        
+        if len(modelid) != 12:
+            logger.warning(f"ВНИМАНИЕ: modelid имеет длину {len(modelid)} вместо 12 символов!")
+        
         imgext = file.filename.split('.')[-1].split('?')[0]
 
         # Сначала проверяем существование товара
+        logger.debug(f"Выполняем проверку существования товара с modelid: '{modelid}'")
         result = db.execute(
             text("""
                 SELECT FIRST 1 "id"
