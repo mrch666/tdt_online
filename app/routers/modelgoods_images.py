@@ -160,14 +160,24 @@ async def upload_model_image(
             logger.info(f"Изображение сохранено через временный файл: {filename}")
             logger.info(f"Результат процедуры: {result}")
             
-            # Проверяем сохраненный файл
+            # Проверяем сохраненный файл с повторными попытками
             import time
-            time.sleep(1)  # Даем время на сохранение
+            file_exists = False
+            saved_size = 0
             
-            if os.path.exists(full_path):
-                saved_size = os.path.getsize(full_path)
-                logger.info(f"Файл сохранен: {full_path}, размер: {saved_size} байт")
+            # Пробуем несколько раз с увеличивающейся задержкой
+            for attempt in range(5):
+                time.sleep(1)  # Даем время на сохранение
                 
+                if os.path.exists(full_path):
+                    file_exists = True
+                    saved_size = os.path.getsize(full_path)
+                    logger.info(f"Файл сохранен (попытка {attempt+1}): {full_path}, размер: {saved_size} байт")
+                    break
+                else:
+                    logger.debug(f"Файл еще не сохранен, попытка {attempt+1}/5")
+            
+            if file_exists:
                 if saved_size != len(file_data):
                     logger.error(f"ВНИМАНИЕ: Размер сохраненного файла ({saved_size}) не совпадает с переданными данными ({len(file_data)})")
                     # Проверяем содержимое
@@ -183,7 +193,7 @@ async def upload_model_image(
                 else:
                     logger.info(f"OK: Размер сохраненного файла совпадает с переданными данными")
             else:
-                logger.error(f"ВНИМАНИЕ: Файл не сохранен: {full_path}")
+                logger.error(f"ВНИМАНИЕ: Файл не сохранен после 5 попыток: {full_path}")
                 raise HTTPException(500, "File was not saved on server")
             
         except Exception as e:
