@@ -76,15 +76,15 @@ def test_fbclient_fixed():
     
     print("\n=== ПРОВЕРКА КОНФИГУРАЦИИ ===")
     
-    # Проверяем, что в database.py правильный путь
+    # Проверяем, что в database.py используется переменная из .env
     try:
         with open('app/database.py', 'r', encoding='utf-8') as f:
             content = f.read()
             
-        if '"fb_library_name": "C:\\\\Program Files (x86)\\\\tdt3\\\\fbclient.dll"' in content:
-            print("[OK] В database.py установлен правильный путь к fbclient.dll")
+        if "os.getenv('FBCLIENT_PATH'" in content:
+            print("[OK] В database.py используется FBCLIENT_PATH из .env")
         else:
-            print("[ERROR] В database.py неправильный путь к fbclient.dll")
+            print("[ERROR] В database.py не используется FBCLIENT_PATH из .env")
             all_passed = False
             
     except Exception as e:
