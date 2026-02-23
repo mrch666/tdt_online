@@ -153,48 +153,56 @@ async def upload_model_image(
             }
             
             # Выполняем запрос с явным указанием типа для BLOB
-            result = db.execute(sql, params).fetchall()
+            procedure_result = db.execute(sql, params).fetchall()
             
             db.commit()
             
             logger.info(f"Изображение сохранено через временный файл: {filename}")
-            logger.info(f"Результат процедуры: {result}")
+            logger.info(f"Результат процедуры: {procedure_result}")
             
-            # Проверяем сохраненный файл с повторными попытками
-            import time
-            file_exists = False
-            saved_size = 0
-            
-            # Пробуем несколько раз с увеличивающейся задержкой
-            for attempt in range(5):
-                time.sleep(1)  # Даем время на сохранение
+            # Проверяем результат хранимой процедуры вместо проверки файла на диске
+            # Процедура wp_SaveBlobToFile возвращает oRes = 1 при успешном сохранении
+            if procedure_result and len(procedure_result) > 0:
+                # Получаем значение oRes из результата процедуры
+                oRes_value = procedure_result[0][0]  # Первая строка, первая колонка
+                logger.debug(f"Значение oRes из процедуры: {oRes_value} (тип: {type(oRes_value)})")
                 
-                if os.path.exists(full_path):
-                    file_exists = True
-                    saved_size = os.path.getsize(full_path)
-                    logger.info(f"Файл сохранен (попытка {attempt+1}): {full_path}, размер: {saved_size} байт")
-                    break
+                if oRes_value == 1:
+                    logger.info(f"Процедура вернула успех (oRes=1), файл сохранен")
+                    
+                    # Дополнительная проверка файла на диске (необязательная, только для логирования)
+                    import time
+                    time.sleep(1)  # Короткая задержка для файловой системы
+                    
+                    if os.path.exists(full_path):
+                        saved_size = os.path.getsize(full_path)
+                        logger.info(f"Файл подтвержден на диске: {full_path}, размер: {saved_size} байт")
+                        
+                        if saved_size != len(file_data):
+                            logger.warning(f"Размер файла на диске ({saved_size}) не совпадает с переданными данными ({len(file_data)})")
+                            # Проверяем содержимое только если размер не совпадает
+                            try:
+                                with open(full_path, 'rb') as f:
+                                    saved_data = f.read()
+                                if saved_data != file_data:
+                                    logger.error(f"Содержимое файла на диске не совпадает с переданными данными")
+                                    logger.error(f"Первые 20 байт сохраненного: {saved_data[:20]}")
+                                    logger.error(f"Первые 20 байт переданных: {file_data[:20]}")
+                            except Exception as read_error:
+                                logger.error(f"Ошибка при проверке содержимого файла: {read_error}")
+                        else:
+                            logger.info(f"OK: Размер файла на диске совпадает с переданными данными")
+                    else:
+                        logger.warning(f"Файл не найден на диске, но процедура вернула успех (oRes=1)")
+                        logger.warning(f"Это может быть из-за задержек файловой системы или кэширования")
+                        # Не бросаем ошибку, т.к. процедура сказала, что файл сохранен
                 else:
-                    logger.debug(f"Файл еще не сохранен, попытка {attempt+1}/5")
-            
-            if file_exists:
-                if saved_size != len(file_data):
-                    logger.error(f"ВНИМАНИЕ: Размер сохраненного файла ({saved_size}) не совпадает с переданными данными ({len(file_data)})")
-                    # Проверяем содержимое
-                    try:
-                        with open(full_path, 'rb') as f:
-                            saved_data = f.read()
-                        if saved_data != file_data:
-                            logger.error(f"ВНИМАНИЕ: Содержимое сохраненного файла не совпадает с переданными данными")
-                            logger.error(f"Первые 20 байт сохраненного: {saved_data[:20]}")
-                            logger.error(f"Первые 20 байт переданных: {file_data[:20]}")
-                    except Exception as read_error:
-                        logger.error(f"Ошибка при проверке содержимого файла: {read_error}")
-                else:
-                    logger.info(f"OK: Размер сохраненного файла совпадает с переданными данными")
+                    logger.error(f"Процедура вернула ошибку: oRes={oRes_value}")
+                    logger.error(f"Полный результат процедуры: {procedure_result}")
+                    raise HTTPException(500, f"File save failed: procedure returned error code {oRes_value}")
             else:
-                logger.error(f"ВНИМАНИЕ: Файл не сохранен после 5 попыток: {full_path}")
-                raise HTTPException(500, "File was not saved on server")
+                logger.error(f"Процедура не вернула результатов")
+                raise HTTPException(500, "File save failed: procedure returned no results")
             
         except Exception as e:
             db.rollback()
