@@ -168,7 +168,7 @@ def download_and_convert_image(url: str) -> tempfile.NamedTemporaryFile:
 
 def upload_to_main_api(modelid: str, image_file_path: str) -> dict:
     """
-    Загружает изображение через API /api/modelgoods/image/
+    Загружает изображение через API /modelgoods/image/
     
     Args:
         modelid: ID модели товара
@@ -186,9 +186,9 @@ def upload_to_main_api(modelid: str, image_file_path: str) -> dict:
             data = {'modelid': modelid}
             
             # Отправляем запрос к API
-            # Используем localhost:7990 как в основном приложении
+            # Используем localhost:8000 как в основном приложении
             response = requests.post(
-                'http://localhost:7990/api/modelgoods/image/',
+                'http://localhost:8000/modelgoods/image/',
                 files=files,
                 data=data,
                 timeout=60

@@ -53,7 +53,9 @@ def run_specific_tests():
     # Запускаем только основные тесты
     test_files = [
         "tests/test_main.py",
-        "tests/test_modelgoods_parameters.py"
+        "tests/test_modelgoods_parameters.py",
+        "tests/test_external_images_port_error.py",
+        "tests/test_external_images_port_fixed.py"
     ]
     
     cmd = [sys.executable, "-m", "pytest"] + test_files + ["-v", "--tb=short"]
