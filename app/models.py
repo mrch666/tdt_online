@@ -1,5 +1,5 @@
 from sqlalchemy import BigInteger, Column, Computed, Date, DateTime, Float, Index, Integer, LargeBinary, SmallInteger, String, Table, Text, text, ForeignKey,Boolean
-from sqlalchemy.orm import declarative_base # from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship,backref
 
 
@@ -1498,3 +1498,23 @@ class Zatratdict(Base):
     name = Column(Text(100), quote=True, name='name')
     userid = Column(Text(12), server_default=text("'0'"))
     changedate = Column(DateTime, quote=True, name='changedate')
+
+
+class ModelgoodsExternalImages(Base):
+    __tablename__ = 'modelgoods_external_images'
+    __table_args__ = (
+        Index('idx_modelgoods_external_images_modelid', 'modelid'),
+        {'quote': True}
+    )
+    
+    id = Column(Text(12), primary_key=True, quote=True, name='id')
+    modelid = Column(Text(12), ForeignKey('modelgoods.id'), nullable=False, server_default=text("'0'"), quote=True, name='modelid')
+    url = Column(String(2000), nullable=False, quote=True, name='url')
+    is_approved = Column(Integer, nullable=False, server_default=text('0'), quote=True, name='is_approved')
+    is_loaded_to_db = Column(Integer, nullable=False, server_default=text('0'), quote=True, name='is_loaded_to_db')
+    created_at = Column(DateTime, server_default=text('CURRENT_TIMESTAMP'), quote=True, name='created_at')
+    updated_at = Column(DateTime, server_default=text('CURRENT_TIMESTAMP'), quote=True, name='updated_at')
+    userid = Column(Text(12), server_default=text("'0'"), quote=True, name='userid')
+    
+    # Связи
+    modelgoods = relationship("Modelgoods", backref="external_images")
