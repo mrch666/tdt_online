@@ -174,6 +174,65 @@ DELETE /api/modelgoods/image/{modelid}
 - Добавлены тесты для API работы с изображениями (`tests/test_modelgoods_images.py`)
 - Проверка структуры API и обработки ошибок
 
+## Исправление ошибки первичного ключа (modelgoods_external_images)
+
+### Проблема
+При добавлении внешних изображений возникала ошибка:
+```
+SQLCODE: -803
+violation of PRIMARY or UNIQUE KEY constraint 'PK_modelgoods_external_images'
+Problematic key value is ('id' = '0')
+```
+
+### Причина
+SQLAlchemy передавал значение `id='0'` из-за наличия `server_default=text("'0'")` в определении поля `id` модели `ModelgoodsExternalImages`. Триггер в Firebird ожидал `UID_NULL()` для генерации нового ID через функцию `GetID()`.
+
+### Решение
+Удален `server_default=text("'0'")` из поля `id` в модели `ModelgoodsExternalImages`. Теперь SQLAlchemy не передает значение по умолчанию, и триггер в Firebird может корректно сгенерировать новый ID.
+
+### Проверка
+1. Модель исправлена - поле `id` больше не имеет `server_default`
+2. SQLAlchemy не будет передавать `id='0'` при вставке новых записей
+3. Триггер в Firebird сможет сгенерировать новый ID через `GetID()`
+4. Ошибка нарушения первичного ключа больше не возникает
+
+## Работа с внешними изображениями
+
+### API для внешних изображений
+- **Валидация URL изображения**: `POST /api/modelgoods/external-images/validate`
+- **Добавление ссылки на внешнее изображение**: `POST /api/modelgoods/external-images/`
+- **Получение всех ссылок для товара**: `GET /api/modelgoods/external-images/{modelid}`
+- **Обновление статусов изображения**: `PUT /api/modelgoods/external-images/{image_id}`
+- **Удаление ссылки на изображение**: `DELETE /api/modelgoods/external-images/{image_id}`
+- **Получение всех ссылок с фильтрами**: `GET /api/modelgoods/external-images/`
+
+### Примеры использования
+
+#### Валидация изображения
+```bash
+curl -X POST "http://localhost:7990/api/modelgoods/external-images/validate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/image.jpg"
+  }'
+```
+
+#### Добавление внешнего изображения
+```bash
+curl -X POST "http://localhost:7990/api/modelgoods/external-images/" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "modelid": "000001002Qa{",
+    "url": "https://cdn.vseinstrumenti.ru/images/goods/.../image.jpg",
+    "userid": "0"
+  }'
+```
+
+#### Получение изображений для товара
+```bash
+curl "http://localhost:7990/api/modelgoods/external-images/000001002Qa{"
+```
+
 ## Тестирование
 ```bash
 pytest tests/
