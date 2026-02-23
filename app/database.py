@@ -21,7 +21,7 @@ SQLALCHEMY_DATABASE_URL = (
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={
-        "fb_library_name": os.path.join(os.getenv('BASE_DIR'), "fbclient.dll"),
+        "fb_library_name": "C:\\Program Files (x86)\\tdt3\\fbclient.dll",
         "charset": "WIN1251"
     },
     pool_size=50,           # Увеличить размер пула для высокой нагрузки
