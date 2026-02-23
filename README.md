@@ -38,7 +38,54 @@
 
 ## Запуск
 ```bash
+# Стандартный запуск (если uvicorn доступен в PATH)
 uvicorn app.main:app --reload
+
+# Альтернативный способ запуска (если возникает ошибка "uvicorn не распознано")
+python -m uvicorn app.main:app --reload --port 7990 --host 0.0.0.0
+
+# Параметры запуска:
+# --reload    - автоматическая перезагрузка при изменениях кода (только для разработки)
+# --port 7990 - порт для запуска сервера
+# --host 0.0.0.0 - доступ со всех интерфейсов
+```
+
+### Решение частых проблем при запуске
+
+#### 1. Ошибка "uvicorn не распознано как имя командлета"
+**Причина**: Uvicorn не установлен или не доступен в PATH
+**Решение**: Используйте альтернативную команду:
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+#### 2. Ошибка "ModuleNotFoundError: No module named 'defusedxml'"
+**Причина**: Отсутствуют необходимые зависимости
+**Решение**: Установите все зависимости из requirements.txt:
+```bash
+pip install -r requirements.txt
+```
+
+#### 3. Ошибка "Form data requires 'python-multipart' to be installed"
+**Причина**: Отсутствует пакет python-multipart
+**Решение**: Установите пакет:
+```bash
+pip install python-multipart==0.0.20
+```
+
+#### 4. Ошибка "Cannot use `Query` for path param 'param_name'"
+**Причина**: Неправильное объявление параметров пути в FastAPI
+**Решение**: Убедитесь, что параметры пути объявлены правильно:
+```python
+# Правильно:
+@router.get("/{model_id}/{param_name}")
+async def get_parameter(model_id: str, param_name: str, db: Session = Depends(get_db)):
+    ...
+
+# Неправильно (использование Query для path параметра):
+@router.get("/{model_id}/{param_name}")
+async def get_parameter(model_id: str, param_name: str = Query(...), db: Session = Depends(get_db)):
+    ...
 ```
 
 ## Примеры API

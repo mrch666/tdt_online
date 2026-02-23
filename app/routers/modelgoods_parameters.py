@@ -246,7 +246,7 @@ async def get_parameters(
         500: {"description": "Ошибка сервера"}})
 async def get_parameter(
     model_id: str,
-    param_name: str = Query(..., min_length=1),
+    param_name: str,
     db: Session = Depends(get_db)):
     try:
         result = await get_parameters(model_id, db)
