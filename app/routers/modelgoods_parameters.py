@@ -83,18 +83,19 @@ def save_parameters_to_file(product_id: str, param_name: str, param_value: str, 
             tmp_file.write(xml_content.encode('windows-1251'))
             tmp_path = tmp_file.name
         
-        # Передаем временный файл в хранимую процедуру
-        sql = text("""SELECT * FROM "wp_SaveBlobToFile"(:dir, dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.xml', :xml_content)""")
-        logger.debug(f"Выполняемый SQL: {sql}")
-        
         with open(tmp_path, 'rb') as file:
             xml_blob = file.read()
         
-            db.execute(sql, {
-                'dir': params_dir,
-                'modelid': product_id,
-                "xml_content": xml_blob
-            }).fetchall()
+        # Для Firebird используем хранимую процедуру
+        sql = text("""SELECT * FROM "wp_SaveBlobToFile"(:dir, dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.xml', :xml_content)""")
+        logger.debug(f"Выполняемый SQL: {sql}")
+        
+        db.execute(sql, {
+            'dir': params_dir,
+            'modelid': product_id,
+            "xml_content": xml_blob
+        }).fetchall()
+        
         db.commit()
         
         # Update model changedate
@@ -130,7 +131,7 @@ async def upload_model_parameters(
     request: Request,
     modelid: str,
     param: str,  # Добавляем параметр пути для сохранения структуры URL
-     db: Session= Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Эндпоинт для загрузки полного XML параметров"""
     try:
@@ -141,9 +142,7 @@ async def upload_model_parameters(
         
         try:
             # Получаем текущие параметры
-            result = await get_parameters(modelid, db)
-            # Исправляем кодировку при чтении
-            xml_content = result.body.decode("windows-1251")
+            xml_content = get_xml_content(modelid, db)
             logger.info(f"Текущий XML перед обновлением:\n{xml_content}")
         except HTTPException:
             xml_content = '<?xml version="1.0" encoding="Windows-1251"?>\n<data/>'
@@ -152,23 +151,55 @@ async def upload_model_parameters(
         try:
             # Пытаемся разобрать JSON
             json_data = json.loads(body)
-            parameters = json_data.get("parameters")
+            # Принимаем как "value" (для тестов) или "parameters" (для обратной совместимости)
+            parameters = json_data.get("value") or json_data.get("parameters")
             logger.debug(f"Имя параметра {param} Переданные данные: {parameters}")
             if not parameters:
-                raise HTTPException(400, "Поле 'parameters' обязательно")
+                raise HTTPException(400, "Поле 'value' или 'parameters' обязательно")
         except json.JSONDecodeError:
             # Если не JSON, пробуем как plain text
             parameters = body.decode("utf-8")
             #  Обновляем XML
       
         # logger.info(f"Обновленный XML после изменений:\n{updated_xml}")  
-        return save_parameters_to_file(modelid, param, parameters,xml_content, db)
+        return save_parameters_to_file(modelid, param, parameters, xml_content, db)
     except HTTPException as he:
         raise he
     except Exception as e:
         logger.error(f"Ошибка загрузки параметров: {str(e)}")
         raise HTTPException(500, "Внутренняя ошибка сервера")
 
+
+def get_xml_content(modelid: str, db: Session) -> str:
+    """Получение XML-контента параметров товара"""
+    try:
+        logger.info(f"Запрос XML-контента для modelid: {modelid}")
+        params_dir = os.path.join(os.getenv('BASE_DIR'), os.getenv('PARAMS_SUBDIR')) + os.sep
+        logger.debug(f"Каталог параметров: {params_dir}")
+        
+        # Для Firebird используем оригинальный запрос
+        sql = text("""
+            SELECT loadblobfromfile(
+                :param_dir || dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.xml'
+            )
+            FROM RDB$DATABASE
+        """)
+        result = db.execute(sql, {
+            "modelid": modelid,
+            "param_dir": params_dir
+        }).fetchone()
+        
+        if not result or not result[0]:
+            logger.warning(f"Параметры не найдены для modelid: {modelid}")
+            raise HTTPException(404, "Параметры не найдены")
+        
+        logger.info(f"XML-контент успешно получен для modelid: {modelid}")
+        return result[0].decode("windows-1251")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Ошибка получения XML-контента: {str(e)}")
+        raise HTTPException(500, "Internal server error")
 
 @router.get(
     "/{modelid}",
@@ -191,31 +222,7 @@ async def get_parameters(
     db: Session = Depends(get_db)
 ):
     try:
-        logger.info(f"Запрос параметров для modelid: {modelid}")
-        params_dir = os.path.join(os.getenv('BASE_DIR'), os.getenv('PARAMS_SUBDIR')) + os.sep
-        logger.debug(f"Каталог параметров: {params_dir}")
-        
-        sql = text("""
-            SELECT loadblobfromfile(
-                :param_dir || dec64i0(:modelid) || '_' || dec64i1(:modelid) || '.xml'
-            )
-            FROM RDB$DATABASE
-        """)
-        logger.debug(f"Выполняемый SQL: {sql}")
-        logger.debug(f"modelid: {modelid},params_dir: {params_dir}")
-        result = db.execute(sql, {
-            "modelid": modelid,
-            "param_dir": params_dir
-        }).fetchone()
-        
-
-
-        if not result or not result[0]:
-            logger.warning(f"Параметры не найдены для modelid: {modelid}")
-            raise HTTPException(404, "Параметры не найдены")
-        
-        logger.info(f"Параметры успешно получены для modelid: {modelid}")
-        content = result[0].decode("windows-1251")
+        content = get_xml_content(modelid, db)
         
         # Обработка формата вывода
         if format == 'json':
@@ -238,6 +245,7 @@ async def get_parameters(
         logger.exception(f"Ошибка получения параметров: {str(e)}")
         raise HTTPException(500, "Internal server error")
 
+
 @router.get("/{model_id}/{param_name}",
     summary="Получение значения конкретного параметра",
     responses={
@@ -249,8 +257,10 @@ async def get_parameter(
     param_name: str,
     db: Session = Depends(get_db)):
     try:
-        result = await get_parameters(model_id, db)
-        content = result.body.decode("utf-8")
+        # Получаем XML контент напрямую, не вызывая get_parameters
+        content = get_xml_content(model_id, db)
+        
+        # Парсим XML и находим параметр
         root = fromstring(content)
         elem = root.find(param_name)
         if elem is not None and elem.text:

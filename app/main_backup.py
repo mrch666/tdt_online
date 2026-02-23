@@ -66,20 +66,16 @@ from app.routers import (
     modelgoods_images,
     modelgoods_external_images
 )
-from app.routers.web import pages
 
-# Старые роутеры (без префикса /api в main.py, так как они уже имеют свои префиксы)
-app.include_router(users.router)
-app.include_router(modelgoods.router)
-app.include_router(modelgoods_description.router)
+# Роутеры без префикса /api в своем определении
+app.include_router(users.router, prefix="/api")
+app.include_router(modelgoods.router, prefix="/api")
+app.include_router(modelgoods_description.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
-app.include_router(modelgoods_search.router)
-app.include_router(modelgoods_parameters.router)
-app.include_router(ozon_categories.router)
-app.include_router(modelgoods_images.router)
+app.include_router(modelgoods_search.router, prefix="/api")
+app.include_router(modelgoods_parameters.router, prefix="/api")
+app.include_router(ozon_categories.router, prefix="/api")
+app.include_router(modelgoods_images.router, prefix="/api")
 
-# Новый роутер modelgoods_external_images уже имеет префикс /api в своем определении
+# Роутер modelgoods_external_images уже имеет префикс /api в своем определении
 app.include_router(modelgoods_external_images.router)
-
-# Веб-страницы
-app.include_router(pages.router)

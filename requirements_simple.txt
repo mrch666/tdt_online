@@ -18,20 +18,15 @@ python-dotenv==1.0.0
 requests==2.31.0
 Jinja2==3.0.2
 
-# Тестирование
-pytest==8.3.5
-pytest-mock==3.14.0
-
 # Для работы с XML
 lxml==4.9.3
 xmltodict==0.13.0
 
 # Для работы с файлами
 aiofiles==23.2.1
-Pillow==12.1.1
 
 # Системные зависимости
-greenlet==3.1.1
+greenlet==1.1.2
 typing_extensions==4.8.0
 exceptiongroup==1.2.2
 anyio==4.5.2
