@@ -7,6 +7,11 @@ from sqlalchemy import cast, String, text, bindparam, and_, or_, not_
 from app.database import get_db
 from app.models import Users, Storage, Modelgoods, Folders, ModelgoodsExternalImages
 from app.config import settings
+from app.routers.image_processing_utils import (
+    is_jpg_file,
+    optimize_external_image_processing,
+    download_image_with_optimization
+)
 import logging
 import requests
 import tempfile
@@ -167,23 +172,20 @@ def download_and_convert_image(url: str) -> tempfile.NamedTemporaryFile:
         raise HTTPException(status_code=400, detail=f"Ошибка при обработке изображения: {str(e)}")
 
 
-def upload_to_main_api(modelid: str, image_file_path: str) -> dict:
+async def upload_to_main_api(modelid: str, image_file_path: str, db: Session = None) -> dict:
     """
-    Загружает изображение через API /modelgoods/image/
+    Загружает изображение через прямой вызов функции или API
     
     Args:
         modelid: ID модели товара
         image_file_path: Путь к файлу изображения
+        db: Сессия базы данных (опционально)
         
     Returns:
         Результат загрузки в формате словаря
     """
     try:
-        logger.info(f"Загрузка изображения для modelid={modelid} через API")
-        
-        # Получаем URL API из конфигурации
-        api_url = settings.get_modelgoods_image_url()
-        logger.info(f"Используем API URL: {api_url}")
+        logger.info(f"Загрузка изображения для modelid={modelid}")
         
         # Проверяем размер файла перед отправкой
         file_size = os.path.getsize(image_file_path)
@@ -193,9 +195,48 @@ def upload_to_main_api(modelid: str, image_file_path: str) -> dict:
             logger.error("Пустой файл для загрузки")
             return {"status": "error", "message": "Пустой файл для загрузки"}
         
-        # Читаем файл в память перед отправкой, чтобы избежать блокировки
+        # Читаем файл в память
         with open(image_file_path, 'rb') as f:
             file_content = f.read()
+        
+        # Получаем имя файла из пути
+        filename = os.path.basename(image_file_path)
+        
+        # Если передан db, используем прямой вызов функции
+        if db is not None:
+            logger.info(f"Используем прямой вызов функции для загрузки изображения")
+            try:
+                from app.routers.image_processing_utils import process_image_directly
+                
+                result = await process_image_directly(
+                    modelid=modelid,
+                    image_content=file_content,
+                    filename=filename,
+                    db=db
+                )
+                
+                if hasattr(result, 'dict'):
+                    result_dict = result.dict()
+                else:
+                    result_dict = result
+                
+                if result_dict.get('status') == 'success':
+                    logger.info(f"Успешная загрузка через прямой вызов: {result_dict}")
+                    return {"status": "success", "message": "Изображение успешно загружено", "result": result_dict}
+                else:
+                    logger.error(f"Ошибка при прямой загрузке: {result_dict}")
+                    return {"status": "error", "message": f"Ошибка загрузки: {result_dict.get('message', 'Неизвестная ошибка')}"}
+                    
+            except Exception as e:
+                logger.error(f"Ошибка при прямом вызове функции: {str(e)}")
+                # Пробуем использовать API как fallback
+        
+        # Используем API как fallback
+        logger.info(f"Используем API как fallback для загрузки изображения")
+        
+        # Получаем URL API из конфигурации
+        api_url = settings.get_modelgoods_image_url()
+        logger.info(f"Используем API URL: {api_url}")
         
         # Создаем файловый объект из данных в памяти
         files = {'file': (f'{modelid}.jpg', file_content, 'image/jpeg')}
@@ -233,7 +274,7 @@ def upload_to_main_api(modelid: str, image_file_path: str) -> dict:
         logger.error(f"Таймаут при подключении к API {api_url}: {str(e)}")
         return {"status": "error", "message": f"Таймаут при подключении к API: {str(e)}"}
     except Exception as e:
-        logger.error(f"Ошибка при загрузке через API: {str(e)}")
+        logger.error(f"Ошибка при загрузке: {str(e)}")
         return {"status": "error", "message": f"Ошибка при загрузке: {str(e)}"}
 
 
@@ -388,13 +429,80 @@ async def process_external_image(
                 content={"success": False, "message": "Изображение уже подтверждено"}
             )
         
-        # Скачиваем и конвертируем изображение
+        # Проверяем, является ли файл JPG для оптимизированной обработки
+        filename_from_url = image.url.split('/')[-1].split('?')[0]
+        
+        if is_jpg_file(filename_from_url):
+            logger.info(f"Файл {filename_from_url} является JPG, используем оптимизированную обработку")
+            
+            try:
+                # Используем оптимизированную обработку
+                result = await optimize_external_image_processing(
+                    modelid=image.modelid,
+                    image_url=image.url,
+                    db=db
+                )
+                
+                logger.info(f"Результат оптимизированной обработки: {result}")
+                
+                if result.get('status') == 'success':
+                    # Успешная загрузка
+                    image.is_approved = 1
+                    image.is_loaded_to_db = 1
+                    db.commit()
+                    
+                    logger.info(f"Изображение {image_id} успешно загружено в БД (оптимизированный путь)")
+                    
+                    # Проверяем, нужно ли скрывать весь товар
+                    other_images = db.query(ModelgoodsExternalImages).filter(
+                        ModelgoodsExternalImages.modelid == image.modelid,
+                        ModelgoodsExternalImages.id != image.id
+                    ).all()
+                    
+                    hide_product = not any(
+                        img.is_approved == 1 and img.is_loaded_to_db == 1
+                        for img in other_images
+                    )
+                    
+                    return JSONResponse(
+                        status_code=200,
+                        content={
+                            "success": True,
+                            "message": "Изображение успешно загружено в БД (оптимизированный путь)",
+                            "hide_product": hide_product
+                        }
+                    )
+                else:
+                    # Ошибка в оптимизированной обработке
+                    image.is_approved = 1  # Отмечаем как подтвержденное
+                    image.is_loaded_to_db = 0  # Но не загруженное в БД
+                    db.commit()
+                    
+                    logger.error(f"Ошибка оптимизированной обработки изображения {image_id}: {result.get('message')}")
+                    
+                    return JSONResponse(
+                        status_code=200,
+                        content={
+                            "success": False,
+                            "message": f"Ошибка загрузки в БД: {result.get('message', 'Неизвестная ошибка')}",
+                            "image_gray": True  # Флаг для серой миниатюры
+                        }
+                    )
+                    
+            except Exception as e:
+                logger.error(f"Ошибка при оптимизированной обработке изображения {image_id}: {str(e)}")
+                import traceback
+                logger.error(f"Трассировка ошибки: {traceback.format_exc()}")
+                # Пробуем стандартный путь как fallback
+                logger.info(f"Пробуем стандартный путь обработки для изображения {image_id}")
+        
+        # Стандартная обработка (для не-JPG файлов или как fallback)
         temp_file = None
         try:
             temp_file = download_and_convert_image(image.url)
             
             # Загружаем через API
-            api_result = upload_to_main_api(image.modelid, temp_file.name)
+            api_result = await upload_to_main_api(image.modelid, temp_file.name, db)
             
             if api_result.get('status') == 'success':
                 # Успешная загрузка
@@ -402,10 +510,9 @@ async def process_external_image(
                 image.is_loaded_to_db = 1
                 db.commit()
                 
-                logger.info(f"Изображение {image_id} успешно загружено в БД")
+                logger.info(f"Изображение {image_id} успешно загружено в БД (стандартный путь)")
                 
                 # Проверяем, нужно ли скрывать весь товар
-                # (если это первое успешно загруженное изображение для товара)
                 other_images = db.query(ModelgoodsExternalImages).filter(
                     ModelgoodsExternalImages.modelid == image.modelid,
                     ModelgoodsExternalImages.id != image.id
