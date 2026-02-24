@@ -93,15 +93,10 @@ async def upload_model_image(
                     db.commit()
                     logger.info(f"Старый файл удален через хранимую процедуру: {filename}")
                     
-                    # Даем время на удаление
-                    import time
-                    time.sleep(1)
-                    
-                    # Проверяем удаление
+                    # Не даем время на удаление - процедура должна работать синхронно
+                    # Если файл все еще существует, это проблема процедуры, но мы продолжаем
                     if os.path.exists(full_path):
                         logger.warning(f"Файл все еще существует после удаления через процедуру")
-                        # Пробуем удалить еще раз с большей задержкой
-                        time.sleep(2)
                 except Exception as delete_error:
                     logger.warning(f"Не удалось удалить старый файл через процедуру: {delete_error}")
                     # Пробуем удалить напрямую (хотя скорее всего не получится из-за прав)
@@ -110,10 +105,6 @@ async def upload_model_image(
                         logger.info(f"Старый файл удален напрямую: {filename}")
                     except Exception as direct_delete_error:
                         logger.warning(f"Не удалось удалить старый файл напрямую: {direct_delete_error}")
-                
-                # Даем дополнительное время на освобождение файла
-                import time
-                time.sleep(2)
             
             # Создаем временный файл
             with tempfile.NamedTemporaryFile(delete=False, mode='wb') as tmp_file:
@@ -171,9 +162,7 @@ async def upload_model_image(
                     logger.info(f"Процедура вернула успех (oRes=1), файл сохранен")
                     
                     # Дополнительная проверка файла на диске (необязательная, только для логирования)
-                    import time
-                    time.sleep(1)  # Короткая задержка для файловой системы
-                    
+                    # Не используем time.sleep - проверяем сразу
                     if os.path.exists(full_path):
                         saved_size = os.path.getsize(full_path)
                         logger.info(f"Файл подтвержден на диске: {full_path}, размер: {saved_size} байт")
