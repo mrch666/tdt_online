@@ -85,7 +85,7 @@ def test_upload_to_main_api_success():
             assert 'files' in call_kwargs
             assert 'data' in call_kwargs
             assert call_kwargs['data']['modelid'] == "000001001G2C"
-            assert call_kwargs['timeout'] == 60
+            assert call_kwargs['timeout'] == 120  # Увеличили таймаут для больших файлов
     finally:
         # Удаляем временный файл
         if os.path.exists(tmp_path):

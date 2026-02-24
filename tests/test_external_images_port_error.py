@@ -76,7 +76,7 @@ def test_upload_to_main_api_404_error_with_configuration():
                 
                 # Проверяем, что функция вернула ошибку
                 assert result["status"] == "error"
-                assert "Ошибка API: 404" in result["message"]
+                assert "API endpoint не найден" in result["message"]
                 
                 # Проверяем, что был вызов с URL из конфигурации
                 mock_post.assert_called_once()

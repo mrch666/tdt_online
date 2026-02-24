@@ -185,17 +185,29 @@ def upload_to_main_api(modelid: str, image_file_path: str) -> dict:
         api_url = settings.get_modelgoods_image_url()
         logger.info(f"Используем API URL: {api_url}")
         
+        # Проверяем размер файла перед отправкой
+        file_size = os.path.getsize(image_file_path)
+        logger.info(f"Размер файла для загрузки: {file_size} байт")
+        
+        if file_size == 0:
+            logger.error("Пустой файл для загрузки")
+            return {"status": "error", "message": "Пустой файл для загрузки"}
+        
         # Открываем файл для загрузки
         with open(image_file_path, 'rb') as f:
             files = {'file': (f'{modelid}.jpg', f, 'image/jpeg')}
             data = {'modelid': modelid}
             
-            # Отправляем запрос к API
+            # Логируем детали запроса
+            logger.info(f"Отправка запроса к API: {api_url}")
+            logger.info(f"Данные: modelid={modelid}, размер файла={file_size} байт")
+            
+            # Отправляем запрос к API с увеличенным таймаутом
             response = requests.post(
                 api_url,
                 files=files,
                 data=data,
-                timeout=60
+                timeout=120  # Увеличиваем таймаут для больших файлов
             )
             
         logger.info(f"Ответ API: статус {response.status_code}")
@@ -204,10 +216,19 @@ def upload_to_main_api(modelid: str, image_file_path: str) -> dict:
             result = response.json()
             logger.info(f"Успешная загрузка: {result}")
             return result
+        elif response.status_code == 404:
+            logger.error(f"API endpoint не найден: {api_url}")
+            return {"status": "error", "message": f"API endpoint не найден: {api_url}"}
         else:
             logger.error(f"Ошибка API: {response.status_code} - {response.text}")
-            return {"status": "error", "message": f"Ошибка API: {response.status_code}"}
+            return {"status": "error", "message": f"Ошибка API: {response.status_code}: {response.text[:200]}"}
             
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Ошибка подключения к API {api_url}: {str(e)}")
+        return {"status": "error", "message": f"Не удалось подключиться к API: {str(e)}"}
+    except requests.exceptions.Timeout as e:
+        logger.error(f"Таймаут при подключении к API {api_url}: {str(e)}")
+        return {"status": "error", "message": f"Таймаут при подключении к API: {str(e)}"}
     except Exception as e:
         logger.error(f"Ошибка при загрузке через API: {str(e)}")
         return {"status": "error", "message": f"Ошибка при загрузке: {str(e)}"}
@@ -430,13 +451,26 @@ async def process_external_image(
             )
             
         finally:
-            # Удаляем временный файл
+            # Удаляем временный файл с повторными попытками
             if temp_file and os.path.exists(temp_file.name):
-                try:
-                    os.unlink(temp_file.name)
-                    logger.info(f"Временный файл удален: {temp_file.name}")
-                except Exception as e:
-                    logger.warning(f"Не удалось удалить временный файл: {str(e)}")
+                max_attempts = 3
+                for attempt in range(max_attempts):
+                    try:
+                        os.unlink(temp_file.name)
+                        logger.info(f"Временный файл удален: {temp_file.name}")
+                        break
+                    except (PermissionError, OSError) as e:
+                        if attempt == max_attempts - 1:
+                            # Последняя попытка - логируем предупреждение
+                            logger.warning(f"Не удалось удалить временный файл после {max_attempts} попыток: {str(e)}")
+                        else:
+                            # Ждем перед следующей попыткой (100ms)
+                            import time
+                            time.sleep(0.1)
+                    except Exception as e:
+                        # Другие ошибки логируем как предупреждение
+                        logger.warning(f"Ошибка при удалении временного файла: {str(e)}")
+                        break
                     
     except Exception as e:
         logger.error(f"Неожиданная ошибка при обработке изображения {image_id}: {str(e)}")
