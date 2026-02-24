@@ -106,12 +106,24 @@ async def upload_model_image(
                     except Exception as direct_delete_error:
                         logger.warning(f"Не удалось удалить старый файл напрямую: {direct_delete_error}")
             
-            # Создаем временный файл
+            # Создаем временный файл и сразу читаем его содержимое
+            # Используем один блок with для создания и чтения файла
+            tmp_path = None
+            file_blob = None
+            
             with tempfile.NamedTemporaryFile(delete=False, mode='wb') as tmp_file:
                 tmp_file.write(file_data)
                 tmp_path = tmp_file.name
+                
+                # Закрываем файл перед чтением
+                tmp_file.flush()
+                tmp_file.close()
+                
+                # Читаем содержимое файла сразу после закрытия
+                with open(tmp_path, 'rb') as f:
+                    file_blob = f.read()
             
-            tmp_size = os.path.getsize(tmp_path)
+            tmp_size = len(file_blob)
             logger.debug(f"Временный файл создан: {tmp_path}, размер: {tmp_size} байт")
             
             # Выполняем хранимую процедуру через временный файл
@@ -129,9 +141,6 @@ async def upload_model_image(
             )
             
             logger.debug(f"Выполняемый SQL: {sql}")
-            
-            with open(tmp_path, 'rb') as tmp_file:
-                file_blob = tmp_file.read()
             
             logger.debug(f"Передаваемые данные: {len(file_blob)} байт")
             

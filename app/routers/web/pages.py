@@ -193,22 +193,25 @@ def upload_to_main_api(modelid: str, image_file_path: str) -> dict:
             logger.error("Пустой файл для загрузки")
             return {"status": "error", "message": "Пустой файл для загрузки"}
         
-        # Открываем файл для загрузки
+        # Читаем файл в память перед отправкой, чтобы избежать блокировки
         with open(image_file_path, 'rb') as f:
-            files = {'file': (f'{modelid}.jpg', f, 'image/jpeg')}
-            data = {'modelid': modelid}
-            
-            # Логируем детали запроса
-            logger.info(f"Отправка запроса к API: {api_url}")
-            logger.info(f"Данные: modelid={modelid}, размер файла={file_size} байт")
-            
-            # Отправляем запрос к API с увеличенным таймаутом
-            response = requests.post(
-                api_url,
-                files=files,
-                data=data,
-                timeout=120  # Увеличиваем таймаут для больших файлов
-            )
+            file_content = f.read()
+        
+        # Создаем файловый объект из данных в памяти
+        files = {'file': (f'{modelid}.jpg', file_content, 'image/jpeg')}
+        data = {'modelid': modelid}
+        
+        # Логируем детали запроса
+        logger.info(f"Отправка запроса к API: {api_url}")
+        logger.info(f"Данные: modelid={modelid}, размер файла={file_size} байт")
+        
+        # Отправляем запрос к API с увеличенным таймаутом
+        response = requests.post(
+            api_url,
+            files=files,
+            data=data,
+            timeout=120  # Увеличиваем таймаут для больших файлов
+        )
             
         logger.info(f"Ответ API: статус {response.status_code}")
         
